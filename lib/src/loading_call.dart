@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
-
+import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
 class LoadingCall extends StatefulWidget {
   final WidgetBuilder builder;
+  final WidgetBuilder emptyBuilder;
   final bool isEmpty;
+  final Future<bool> Function(BuildContext context) onInitLoading;
+  final Widget Function(BuildContext context, dynamic error) errorBuilder;
 
-  const LoadingCall({Key key, this.builder, this.isEmpty = false})
+  const LoadingCall({
+    Key key,
+    this.builder,
+    this.isEmpty = true,
+    this.onInitLoading,
+    this.emptyBuilder,
+    this.errorBuilder,
+  })
       : assert(null != builder),
         super(key: key);
 
@@ -14,13 +24,17 @@ class LoadingCall extends StatefulWidget {
 
   static _Call of(BuildContext context, {bool root = false, String text}) {
     if (!root) {
-      var state = context.findAncestorStateOfType<LoadingStatusState>();
+      LoadingStatusState state;
+      if (context is StatefulElement && (context).state is LoadingStatusState) {
+        state = context.state;
+      } else {
+        state = context.findAncestorStateOfType<LoadingStatusState>();
+      }
       if (null != state) {
         return state;
       }
     }
     return _LoadingCall(
-      Overlay.of(context, rootOverlay: root),
       context,
       text,
     );
@@ -28,25 +42,34 @@ class LoadingCall extends StatefulWidget {
 }
 
 class LoadingStatusState extends State<LoadingCall> with _Call {
-  OverlayEntry _entry;
   var overlayKey = GlobalKey<OverlayState>();
 
   @override
   void initState() {
     super.initState();
+    _context = context;
     _isEmpty = widget.isEmpty;
-    _entry = OverlayEntry(
-      builder: (context) {
-        return isEmpty ? _buildEmpty(context) : widget.builder(context);
-      },
-    );
+    if (null != widget.onInitLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+        try {
+          isEmpty = !await widget.onInitLoading(context);
+        } catch (e) {}
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Overlay(
-      key: overlayKey,
-      initialEntries: [_entry],
+    Widget child;
+    if (isEmpty) {
+      child = (widget.emptyBuilder ?? _buildEmpty).call(context);
+    } else if (null != error) {
+      child = (widget.errorBuilder ?? _buildError).call(context, error);
+    } else {
+      child = widget.builder(context);
+    }
+    return LoadingTheme(
+      child: child,
     );
   }
 
@@ -58,25 +81,19 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
     );
   }
 
-  @override
-  Future<T> call<T>(LoadingStateCall call) async {
-    var entry = OverlayEntry(builder: builderProgress);
-    try {
-      overlayKey.currentState.insert(entry);
-      return await Future.wait([call(this), Future.delayed(Duration(seconds: 1))]).then((value) => value[0]);
-    } catch (e) {
-      rethrow;
-    } finally {
-      entry?.remove();
-    }
+  Widget _buildError(BuildContext context, dynamic error) {
+    return Material(
+      child: Center(
+        child: Text("Error :$error"),
+      ),
+    );
   }
 
   @override
   void set isEmpty(bool value) {
-    if (isEmpty != value) {
-      super.isEmpty = value;
-      _entry.markNeedsBuild();
-    }
+    setState(() {
+      super._isEmpty = value;
+    });
   }
 }
 
@@ -84,7 +101,11 @@ typedef LoadingStateCall<T> = Future<T> Function(_Call state);
 
 abstract class _Call {
   String _text;
-  bool _isEmpty = true;
+  bool _isEmpty = false;
+
+  dynamic _error;
+
+  BuildContext _context;
 
   bool get isEmpty => _isEmpty;
 
@@ -92,49 +113,31 @@ abstract class _Call {
     _isEmpty = value;
   }
 
-  Future<T> call<T>(LoadingStateCall call);
+  dynamic get error => _error;
 
-  Widget builderProgress(BuildContext context) {
-    return Material(
-      color: Color(0x50000000),
-      child: Center(
-        child: Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(color: Color(0x90000000), borderRadius: BorderRadius.all(Radius.circular(12))),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              CircularProgressIndicator(),
-              if (_text?.isNotEmpty ?? false)
-                Text(
-                  _text,
-                  style: TextStyle(color: Colors.white, fontSize: 12),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
+  set error(dynamic value) {
+    _error = value;
+    showToast(_context, "$value");
+  }
+
+  Future<T> call<T>(LoadingStateCall call) async {
+    var _loadingController = showLoading(_context, msg: _text);
+    try {
+      _error = null;
+      var value = await Future.wait([call(this), Future.delayed(Duration(seconds: 1))]);
+      return value[0];
+    } catch (e) {
+      error = e;
+      rethrow;
+    } finally {
+      _loadingController.close();
+    }
   }
 }
 
 class _LoadingCall extends _Call {
-  final OverlayState _overlay;
-  final BuildContext _context;
-
-  _LoadingCall(this._overlay, this._context, String text) {
+  _LoadingCall(BuildContext _context, String text) {
     _text = text;
-  }
-
-  Future<T> call<T>(LoadingStateCall call) async {
-    var entry = OverlayEntry(builder: builderProgress);
-    _overlay.insert(entry);
-    try {
-      return await Future.wait([call(this), Future.delayed(Duration(seconds: 1))]).then((value) => value[0]);
-    } catch (e) {} finally {
-      entry?.remove();
-    }
+    _context = _context;
   }
 }

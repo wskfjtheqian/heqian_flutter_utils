@@ -11,23 +11,23 @@ class ToastController extends ChangeNotifier {
   }
 }
 
-showToast(
-  BuildContext context,
-  String msg, {
-  Duration duration,
-  TextStyle textStyle,
-  Alignment alignment,
-  EdgeInsets padding,
-  Color color,
-  Radius radius,
-  ToastController controller,
-  bool rootOverlay = true,
-}) {
+showToast(BuildContext context,
+    String msg, {
+      Duration duration,
+      TextStyle textStyle,
+      Alignment alignment,
+      EdgeInsets padding,
+      Color color,
+      Radius radius,
+      ToastController controller,
+      bool rootOverlay = true,
+    }) {
   assert(msg?.isNotEmpty ?? false);
   controller ??= ToastController();
   OverlayEntry overlay;
-  overlay = OverlayEntry(builder: (context) {
+  overlay = OverlayEntry(builder: (_) {
     return _Toast(
+      context: context,
       msg: msg,
       onRemove: overlay.remove,
       duration: duration,
@@ -82,14 +82,14 @@ class ToastThemeData {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ToastThemeData &&
-          runtimeType == other.runtimeType &&
-          duration == other.duration &&
-          textStyle == other.textStyle &&
-          alignment == other.alignment &&
-          padding == other.padding &&
-          color == other.color &&
-          radius == other.radius;
+          other is ToastThemeData &&
+              runtimeType == other.runtimeType &&
+              duration == other.duration &&
+              textStyle == other.textStyle &&
+              alignment == other.alignment &&
+              padding == other.padding &&
+              color == other.color &&
+              radius == other.radius;
 
   @override
   int get hashCode => duration.hashCode ^ textStyle.hashCode ^ alignment.hashCode ^ padding.hashCode ^ color.hashCode ^ radius.hashCode;
@@ -98,9 +98,11 @@ class ToastThemeData {
 class ToastTheme extends InheritedTheme {
   final ToastThemeData data;
 
-  ToastTheme({
+  const ToastTheme({
+    Key key,
     this.data,
-  });
+    @required Widget child,
+  }) : super(key: key, child: child);
 
   static ToastThemeData of(BuildContext context) {
     final ToastTheme inheritedButtonTheme = context.dependOnInheritedWidgetOfExactType<ToastTheme>();
@@ -122,7 +124,8 @@ class ToastTheme extends InheritedTheme {
     Key key,
     @required this.data,
     Widget child,
-  })  : assert(data != null),
+  })
+      : assert(data != null),
         super(key: key, child: child);
 }
 
@@ -136,6 +139,7 @@ class _Toast extends StatefulWidget {
   final Color color;
   final Radius radius;
   final ToastController toastController;
+  final BuildContext context;
 
   const _Toast({
     Key key,
@@ -148,6 +152,7 @@ class _Toast extends StatefulWidget {
     this.color,
     this.radius,
     this.toastController,
+    this.context,
   }) : super(key: key);
 
   @override
@@ -165,11 +170,15 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
     _controller.addListener(_onListener);
     _controller.forward();
     super.initState();
-    _timer = Timer(widget.duration ?? (ToastTheme.of(context)?.duration ?? Duration(seconds: 2)), () {
-      _controller.reverse();
-      _timer = null;
-    });
     widget.toastController?._onRemove = _onRemove;
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      _timer = Timer(widget.duration ?? (ToastTheme
+          .of(widget.context)
+          ?.duration ?? Duration(seconds: 2)), () {
+        _controller.reverse();
+        _timer = null;
+      });
+    });
   }
 
   _onRemove() {
@@ -191,7 +200,7 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    ToastThemeData theme = ToastTheme.of(context);
+    ToastThemeData theme = ToastTheme.of(widget.context);
     TextStyle textStyle = TextStyle(
       color: Color(0xFFFFFFFF),
       decoration: TextDecoration.none,

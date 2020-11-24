@@ -79,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           TextButton(
             onPressed: () {
-              var _loadingController = showLoading(context, "Loading");
+              var _loadingController = showLoading(context, msg: "Loading");
               Timer(Duration(seconds: 5), () {
                 _loadingController.close();
               });

@@ -34,7 +34,9 @@ class _NetworkState extends State<Network> {
 
   @override
   Widget build(BuildContext context) {
-    return widget.builder(context);
+    return Builder(builder: (context) {
+      return widget.builder(context);
+    });
   }
 
   T getInterfaces<T>() {
