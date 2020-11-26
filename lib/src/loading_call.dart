@@ -4,17 +4,17 @@ import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 class LoadingCall extends StatefulWidget {
   final WidgetBuilder builder;
   final WidgetBuilder emptyBuilder;
-  final bool isEmpty;
+  final WidgetBuilder initBuilder;
   final Future<bool> Function(BuildContext context) onInitLoading;
   final Widget Function(BuildContext context, dynamic error) errorBuilder;
 
   const LoadingCall({
     Key key,
     this.builder,
-    this.isEmpty = true,
     this.onInitLoading,
     this.emptyBuilder,
     this.errorBuilder,
+    this.initBuilder,
   })
       : assert(null != builder),
         super(key: key);
@@ -43,17 +43,22 @@ class LoadingCall extends StatefulWidget {
 
 class LoadingStatusState extends State<LoadingCall> with _Call {
   var overlayKey = GlobalKey<OverlayState>();
+  var _isInit = true;
 
   @override
   void initState() {
     super.initState();
     _context = context;
-    _isEmpty = widget.isEmpty;
+    _isInit = widget.initBuilder == null;
     if (null != widget.onInitLoading) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
         try {
-          isEmpty = !await widget.onInitLoading(context);
-        } catch (e) {}
+          _isEmpty = false == await widget.onInitLoading(context);
+        } catch (e) {} finally {
+          setState(() {
+            _isInit = true;
+          });
+        }
       });
     }
   }
@@ -61,10 +66,12 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   @override
   Widget build(BuildContext context) {
     Widget child;
-    if (isEmpty) {
+    if (true == isEmpty) {
       child = (widget.emptyBuilder ?? _buildEmpty).call(context);
     } else if (null != error) {
       child = (widget.errorBuilder ?? _buildError).call(context, error);
+    } else if (false == _isInit) {
+      child = widget.initBuilder(context);
     } else {
       child = widget.builder(context);
     }
@@ -76,7 +83,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   Widget _buildEmpty(BuildContext context) {
     return Material(
       child: Center(
-        child: Text("Not data"),
+        child: Text("暂无数据"),
       ),
     );
   }
@@ -84,7 +91,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   Widget _buildError(BuildContext context, dynamic error) {
     return Material(
       child: Center(
-        child: Text("Error :$error"),
+        child: Text("错误 :$error"),
       ),
     );
   }
@@ -95,6 +102,14 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
       super._isEmpty = value;
     });
   }
+
+  @override
+  set error(dynamic value) {
+    setState(() {
+      _error = value;
+    });
+  }
+
 }
 
 typedef LoadingStateCall<T> = Future<T> Function(_Call state);
@@ -128,9 +143,8 @@ abstract class _Call {
     } catch (e) {
       if (isShowError) {
         error = e;
-      } else {
-        rethrow;
       }
+      rethrow;
     } finally {
       _loadingController.close();
     }
@@ -140,6 +154,6 @@ abstract class _Call {
 class _LoadingCall extends _Call {
   _LoadingCall(BuildContext _context, String text) {
     _text = text;
-    _context = _context;
+    this._context = _context;
   }
 }
