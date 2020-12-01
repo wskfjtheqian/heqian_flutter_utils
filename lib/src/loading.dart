@@ -49,18 +49,18 @@ class _LoadingBodyState extends State<Loading> {
   }
 }
 
-LoadingController showLoading(BuildContext context,
-    {
-      String msg,
-      TextStyle textStyle,
-      Alignment alignment,
-      EdgeInsets padding,
-      Color color,
-      Radius radius,
-      LoadingController controller,
-      Widget Function(BuildContext context) indicatorBuilder,
-      bool rootOverlay = true,
-    }) {
+LoadingController showLoading(
+  BuildContext context, {
+  String msg,
+  TextStyle textStyle,
+  Alignment alignment,
+  EdgeInsets padding,
+  Color color,
+  Radius radius,
+  LoadingController controller,
+  Widget Function(BuildContext context) indicatorBuilder,
+  bool rootOverlay = true,
+}) {
   controller ??= LoadingController();
   OverlayEntry overlay;
   overlay = OverlayEntry(builder: (context) {
@@ -127,16 +127,16 @@ class LoadingThemeData {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is LoadingThemeData &&
-              runtimeType == other.runtimeType &&
-              duration == other.duration &&
-              textStyle == other.textStyle &&
-              alignment == other.alignment &&
-              padding == other.padding &&
-              color == other.color &&
-              colorMask == other.colorMask &&
-              radius == other.radius &&
-              indicatorBuilder == other.indicatorBuilder;
+      other is LoadingThemeData &&
+          runtimeType == other.runtimeType &&
+          duration == other.duration &&
+          textStyle == other.textStyle &&
+          alignment == other.alignment &&
+          padding == other.padding &&
+          color == other.color &&
+          colorMask == other.colorMask &&
+          radius == other.radius &&
+          indicatorBuilder == other.indicatorBuilder;
 
   @override
   int get hashCode =>
@@ -179,8 +179,7 @@ class LoadingTheme extends InheritedTheme {
     Key key,
     @required this.data,
     Widget child,
-  })
-      : assert(data != null),
+  })  : assert(data != null),
         super(key: key, child: child);
 }
 

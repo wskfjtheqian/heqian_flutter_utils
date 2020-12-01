@@ -15,8 +15,7 @@ class LoadingCall extends StatefulWidget {
     this.emptyBuilder,
     this.errorBuilder,
     this.initBuilder,
-  })
-      : assert(null != builder),
+  })  : assert(null != builder),
         super(key: key);
 
   @override
@@ -109,7 +108,6 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
       _error = value;
     });
   }
-
 }
 
 typedef LoadingStateCall<T> = Future<T> Function(_Call state);
@@ -135,7 +133,7 @@ abstract class _Call {
     showToast(_context, "$value");
   }
 
-  Future<T> call<T>(LoadingStateCall call, {bool isShowError = true}) async {
+  Future<T> call<T>(LoadingStateCall call, {bool isShowError = false}) async {
     var _loadingController = showLoading(_context, msg: _text);
     try {
       _error = null;

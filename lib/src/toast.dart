@@ -11,17 +11,18 @@ class ToastController extends ChangeNotifier {
   }
 }
 
-showToast(BuildContext context,
-    String msg, {
-      Duration duration,
-      TextStyle textStyle,
-      Alignment alignment,
-      EdgeInsets padding,
-      Color color,
-      Radius radius,
-      ToastController controller,
-      bool rootOverlay = true,
-    }) {
+showToast(
+  BuildContext context,
+  String msg, {
+  Duration duration,
+  TextStyle textStyle,
+  Alignment alignment,
+  EdgeInsets padding,
+  Color color,
+  Radius radius,
+  ToastController controller,
+  bool rootOverlay = true,
+}) {
   assert(msg?.isNotEmpty ?? false);
   controller ??= ToastController();
   OverlayEntry overlay;
@@ -39,7 +40,6 @@ showToast(BuildContext context,
       toastController: controller,
     );
   });
-
   Overlay.of(context, rootOverlay: rootOverlay).insert(overlay);
   return controller;
 }
@@ -82,14 +82,14 @@ class ToastThemeData {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is ToastThemeData &&
-              runtimeType == other.runtimeType &&
-              duration == other.duration &&
-              textStyle == other.textStyle &&
-              alignment == other.alignment &&
-              padding == other.padding &&
-              color == other.color &&
-              radius == other.radius;
+      other is ToastThemeData &&
+          runtimeType == other.runtimeType &&
+          duration == other.duration &&
+          textStyle == other.textStyle &&
+          alignment == other.alignment &&
+          padding == other.padding &&
+          color == other.color &&
+          radius == other.radius;
 
   @override
   int get hashCode => duration.hashCode ^ textStyle.hashCode ^ alignment.hashCode ^ padding.hashCode ^ color.hashCode ^ radius.hashCode;
@@ -124,8 +124,7 @@ class ToastTheme extends InheritedTheme {
     Key key,
     @required this.data,
     Widget child,
-  })
-      : assert(data != null),
+  })  : assert(data != null),
         super(key: key, child: child);
 }
 
@@ -172,9 +171,7 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
     super.initState();
     widget.toastController?._onRemove = _onRemove;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _timer = Timer(widget.duration ?? (ToastTheme
-          .of(widget.context)
-          ?.duration ?? Duration(seconds: 2)), () {
+      _timer = Timer(widget.duration ?? (ToastTheme.of(widget.context)?.duration ?? Duration(seconds: 2)), () {
         _controller.reverse();
         _timer = null;
       });
