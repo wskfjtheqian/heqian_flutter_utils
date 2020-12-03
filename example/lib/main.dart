@@ -92,7 +92,42 @@ class _MyHomePageState extends State<MyHomePage> {
             },
             child: Text("AutoRouter"),
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) {
+                    return ToastPage();
+                  },
+                ),
+              );
+            },
+            child: Text("New Page"),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class ToastPage extends StatefulWidget {
+  @override
+  _ToastPageState createState() => _ToastPageState();
+}
+
+class _ToastPageState extends State<ToastPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        alignment: Alignment.center,
+        child: TextButton(
+          onPressed: () {
+            showToast(context, "Close");
+            Navigator.pop(context);
+          },
+          child: Text("Toast"),
+        ),
       ),
     );
   }

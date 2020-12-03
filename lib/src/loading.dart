@@ -63,6 +63,8 @@ LoadingController showLoading(
 }) {
   controller ??= LoadingController();
   OverlayEntry overlay;
+
+  LoadingThemeData theme = LoadingTheme.of(context);
   overlay = OverlayEntry(builder: (context) {
     return _LoadingBody(
       msg: msg,
@@ -74,6 +76,7 @@ LoadingController showLoading(
       radius: radius,
       toastController: controller,
       indicatorBuilder: indicatorBuilder,
+      theme: theme,
     );
   });
 
@@ -160,7 +163,8 @@ class LoadingTheme extends InheritedTheme {
   }) : super(key: key, child: child);
 
   static LoadingThemeData of(BuildContext context) {
-    final LoadingTheme inheritedButtonTheme = context.dependOnInheritedWidgetOfExactType<LoadingTheme>();
+    final LoadingTheme inheritedButtonTheme =
+        context.dependOnInheritedWidgetOfExactType<LoadingTheme>();
     return inheritedButtonTheme?.data;
   }
 
@@ -171,8 +175,11 @@ class LoadingTheme extends InheritedTheme {
 
   @override
   Widget wrap(BuildContext context, Widget child) {
-    final LoadingTheme ancestorTheme = context.findAncestorWidgetOfExactType<LoadingTheme>();
-    return identical(this, ancestorTheme) ? child : LoadingTheme.fromLoadingThemeData(data: data, child: child);
+    final LoadingTheme ancestorTheme =
+        context.findAncestorWidgetOfExactType<LoadingTheme>();
+    return identical(this, ancestorTheme)
+        ? child
+        : LoadingTheme.fromLoadingThemeData(data: data, child: child);
   }
 
   const LoadingTheme.fromLoadingThemeData({
@@ -194,6 +201,7 @@ class _LoadingBody extends StatefulWidget {
   final LoadingController toastController;
   final Widget Function(BuildContext context) indicatorBuilder;
   final Color colorMask;
+  final LoadingThemeData theme;
 
   const _LoadingBody({
     Key key,
@@ -207,18 +215,21 @@ class _LoadingBody extends StatefulWidget {
     this.radius,
     this.toastController,
     this.indicatorBuilder,
+    this.theme,
   }) : super(key: key);
 
   @override
   __LoadingState createState() => __LoadingState();
 }
 
-class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateMixin {
+class __LoadingState extends State<_LoadingBody>
+    with SingleTickerProviderStateMixin {
   AnimationController _controller;
 
   @override
   void initState() {
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 200));
     _controller.addStatusListener(_onStatusListener);
     _controller.addListener(_onListener);
     _controller.forward();
@@ -242,28 +253,33 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    LoadingThemeData theme = LoadingTheme.of(context);
     TextStyle textStyle = TextStyle(
       color: Color(0xFFFFFFFF),
       decoration: TextDecoration.none,
       fontSize: 14,
       fontWeight: FontWeight.normal,
     );
-    if (null != (widget.textStyle ?? theme?.textStyle)) {
-      textStyle = (widget.textStyle ?? theme?.textStyle).merge(textStyle);
+    if (null != (widget.textStyle ?? widget.theme?.textStyle)) {
+      textStyle =
+          (widget.textStyle ?? widget.theme?.textStyle).merge(textStyle);
     }
-    Widget indicator = (widget.indicatorBuilder ?? theme?.indicatorBuilder)?.call(context);
+    Widget indicator =
+        (widget.indicatorBuilder ?? widget.theme?.indicatorBuilder)
+            ?.call(context);
 
     Widget child = Align(
-      alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.2)),
+      alignment:
+          widget.alignment ?? (widget.theme?.alignment ?? Alignment(0, 0.2)),
       child: Opacity(
         opacity: _controller.value,
         child: Container(
           decoration: BoxDecoration(
-            color: widget.color ?? (theme?.color ?? Color(0x50000000)),
-            borderRadius: BorderRadius.all(widget.radius ?? (theme?.radius ?? Radius.circular(8))),
+            color: widget.color ?? (widget.theme?.color ?? Color(0x50000000)),
+            borderRadius: BorderRadius.all(
+                widget.radius ?? (widget.theme?.radius ?? Radius.circular(8))),
           ),
-          padding: widget.padding ?? (theme?.padding ?? EdgeInsets.all(16)),
+          padding:
+              widget.padding ?? (widget.theme?.padding ?? EdgeInsets.all(16)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -282,7 +298,7 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
       ),
     );
 
-    var colorMask = widget.colorMask ?? theme?.colorMask;
+    var colorMask = widget.colorMask ?? widget.theme?.colorMask;
     if (null != colorMask) {
       child = ColoredBox(
         color: colorMask,
