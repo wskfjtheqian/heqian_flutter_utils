@@ -63,20 +63,20 @@ LoadingController showLoading(
 }) {
   controller ??= LoadingController();
   OverlayEntry overlay;
-
-  LoadingThemeData theme = LoadingTheme.of(context);
   overlay = OverlayEntry(builder: (context) {
-    return _LoadingBody(
-      msg: msg,
-      onRemove: overlay.remove,
-      textStyle: textStyle,
-      alignment: alignment,
-      padding: padding,
-      color: color,
-      radius: radius,
-      toastController: controller,
-      indicatorBuilder: indicatorBuilder,
-      theme: theme,
+    return LoadingTheme(
+      data: LoadingTheme.of(context),
+      child: _LoadingBody(
+        msg: msg,
+        onRemove: overlay.remove,
+        textStyle: textStyle,
+        alignment: alignment,
+        padding: padding,
+        color: color,
+        radius: radius,
+        toastController: controller,
+        indicatorBuilder: indicatorBuilder,
+      ),
     );
   });
 
@@ -201,7 +201,6 @@ class _LoadingBody extends StatefulWidget {
   final LoadingController toastController;
   final Widget Function(BuildContext context) indicatorBuilder;
   final Color colorMask;
-  final LoadingThemeData theme;
 
   const _LoadingBody({
     Key key,
@@ -215,7 +214,6 @@ class _LoadingBody extends StatefulWidget {
     this.radius,
     this.toastController,
     this.indicatorBuilder,
-    this.theme,
   }) : super(key: key);
 
   @override
@@ -253,33 +251,30 @@ class __LoadingState extends State<_LoadingBody>
 
   @override
   Widget build(BuildContext context) {
+    LoadingThemeData theme = LoadingTheme.of(context);
     TextStyle textStyle = TextStyle(
       color: Color(0xFFFFFFFF),
       decoration: TextDecoration.none,
       fontSize: 14,
       fontWeight: FontWeight.normal,
     );
-    if (null != (widget.textStyle ?? widget.theme?.textStyle)) {
-      textStyle =
-          (widget.textStyle ?? widget.theme?.textStyle).merge(textStyle);
+    if (null != (widget.textStyle ?? theme?.textStyle)) {
+      textStyle = (widget.textStyle ?? theme?.textStyle).merge(textStyle);
     }
     Widget indicator =
-        (widget.indicatorBuilder ?? widget.theme?.indicatorBuilder)
-            ?.call(context);
+        (widget.indicatorBuilder ?? theme?.indicatorBuilder)?.call(context);
 
     Widget child = Align(
-      alignment:
-          widget.alignment ?? (widget.theme?.alignment ?? Alignment(0, 0.2)),
+      alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.2)),
       child: Opacity(
         opacity: _controller.value,
         child: Container(
           decoration: BoxDecoration(
-            color: widget.color ?? (widget.theme?.color ?? Color(0x50000000)),
+            color: widget.color ?? (theme?.color ?? Color(0x50000000)),
             borderRadius: BorderRadius.all(
-                widget.radius ?? (widget.theme?.radius ?? Radius.circular(8))),
+                widget.radius ?? (theme?.radius ?? Radius.circular(8))),
           ),
-          padding:
-              widget.padding ?? (widget.theme?.padding ?? EdgeInsets.all(16)),
+          padding: widget.padding ?? (theme?.padding ?? EdgeInsets.all(16)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -298,7 +293,7 @@ class __LoadingState extends State<_LoadingBody>
       ),
     );
 
-    var colorMask = widget.colorMask ?? widget.theme?.colorMask;
+    var colorMask = widget.colorMask ?? theme?.colorMask;
     if (null != colorMask) {
       child = ColoredBox(
         color: colorMask,

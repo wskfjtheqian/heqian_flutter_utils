@@ -26,23 +26,22 @@ showToast(
   assert(msg?.isNotEmpty ?? false);
   controller ??= ToastController();
   OverlayEntry overlay;
-
-  ToastThemeData theme = ToastTheme.of(context);
   overlay = OverlayEntry(builder: (_) {
-    return _Toast(
-      theme: theme,
-      msg: msg,
-      onRemove: overlay.remove,
-      duration: duration,
-      textStyle: textStyle,
-      alignment: alignment,
-      padding: padding,
-      color: color,
-      radius: radius,
-      toastController: controller,
+    return ToastTheme(
+      data: ToastTheme.of(context),
+      child: _Toast(
+        msg: msg,
+        onRemove: overlay.remove,
+        duration: duration,
+        textStyle: textStyle,
+        alignment: alignment,
+        padding: padding,
+        color: color,
+        radius: radius,
+        toastController: controller,
+      ),
     );
   });
-
   Overlay.of(context, rootOverlay: rootOverlay).insert(overlay);
   return controller;
 }
@@ -151,7 +150,6 @@ class _Toast extends StatefulWidget {
   final Color color;
   final Radius radius;
   final ToastController toastController;
-  final ToastThemeData theme;
 
   const _Toast({
     Key key,
@@ -164,7 +162,6 @@ class _Toast extends StatefulWidget {
     this.color,
     this.radius,
     this.toastController,
-    this.theme,
   }) : super(key: key);
 
   @override
@@ -186,8 +183,8 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
     widget.toastController?._onRemove = _onRemove;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       _timer = Timer(
-          widget.duration ?? (widget.theme?.duration ?? Duration(seconds: 2)),
-          () {
+          widget.duration ??
+              (ToastTheme.of(context)?.duration ?? Duration(seconds: 2)), () {
         _controller.reverse();
         _timer = null;
       });
@@ -213,30 +210,29 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    ToastThemeData theme = ToastTheme.of(context);
     TextStyle textStyle = TextStyle(
       color: Color(0xFFFFFFFF),
       decoration: TextDecoration.none,
       fontSize: 14,
       fontWeight: FontWeight.normal,
     );
-    if (null != (widget.textStyle ?? widget.theme?.textStyle)) {
-      textStyle =
-          (widget.textStyle ?? widget.theme?.textStyle).merge(textStyle);
+    if (null != (widget.textStyle ?? theme?.textStyle)) {
+      textStyle = (widget.textStyle ?? theme?.textStyle).merge(textStyle);
     }
 
     return Align(
-      alignment:
-          widget.alignment ?? (widget.theme?.alignment ?? Alignment(0, 0.5)),
+      alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.5)),
       child: Opacity(
         opacity: _controller.value,
         child: Container(
           decoration: BoxDecoration(
-            color: widget.color ?? (widget.theme?.color ?? Color(0xCC808080)),
+            color: widget.color ?? (theme?.color ?? Color(0xCC808080)),
             borderRadius: BorderRadius.all(
-                widget.radius ?? (widget.theme?.radius ?? Radius.circular(8))),
+                widget.radius ?? (theme?.radius ?? Radius.circular(8))),
           ),
           padding: widget.padding ??
-              (widget.theme?.padding ??
+              (theme?.padding ??
                   EdgeInsets.symmetric(vertical: 8, horizontal: 12)),
           child: Text(
             widget.msg,
