@@ -63,9 +63,10 @@ LoadingController showLoading(
 }) {
   controller ??= LoadingController();
   OverlayEntry overlay;
+  var theme = LoadingTheme.of(context);
   overlay = OverlayEntry(builder: (context) {
     return LoadingTheme(
-      data: LoadingTheme.of(context),
+      data: theme,
       child: _LoadingBody(
         msg: msg,
         onRemove: overlay.remove,

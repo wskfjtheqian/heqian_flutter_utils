@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:html';
 
 import 'package:flutter/material.dart';
 import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
@@ -32,17 +33,22 @@ class MyApp extends StatelessWidget {
       },
       builder: (context) {
         return AutoRouter(
-          routers: null,
-          builder: (context, routeFactory) {
-            return MaterialApp(
+          home: "/",
+          routers: {
+            "/": (context, param) => MyHomePage(),
+            "/toastPage": (context, param) =>ToastPage(),
+          },
+          builder: (context, appRouter) {
+            return MaterialApp.router(
+              routerDelegate: appRouter,
+              routeInformationParser: appRouter,
+              routeInformationProvider: PlatformRouteInformationProvider(initialRouteInformation: RouteInformation(location: "/")),
               title: 'Flutter Demo',
               theme: ThemeData(
                 fontFamily: "SourceHanSansCN",
                 primarySwatch: Colors.blue,
                 visualDensity: VisualDensity.adaptivePlatformDensity,
               ),
-              home: MyHomePage(),
-              onGenerateRoute: routeFactory,
             );
           },
         );
@@ -94,13 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) {
-                    return ToastPage();
-                  },
-                ),
-              );
+              AutoRouter.of(context).pushNamed("/toastPage");
             },
             child: Text("New Page"),
           ),

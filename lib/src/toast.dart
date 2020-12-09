@@ -26,9 +26,10 @@ showToast(
   assert(msg?.isNotEmpty ?? false);
   controller ??= ToastController();
   OverlayEntry overlay;
+  var theme = ToastTheme.of(context);
   overlay = OverlayEntry(builder: (_) {
     return ToastTheme(
-      data: ToastTheme.of(context),
+      data: theme,
       child: _Toast(
         msg: msg,
         onRemove: overlay.remove,
