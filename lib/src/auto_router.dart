@@ -32,19 +32,22 @@ class AppRouter extends RouterDelegate<AppRouterData> implements RouteInformatio
   @override
   Widget build(BuildContext context) {
     return Navigator(
-      onGenerateInitialRoutes: (navigator, initialRoute) {
-        return [
-          MaterialPageRoute(builder: (context) {
-            return _routers[_configuration.path]?.call(context, _configuration.params);
-          }),
-        ];
+      pages: [
+        MaterialPage(
+          child: _routers[_configuration.path]?.call(context, _configuration.params),
+          name: _configuration.path,
+          arguments: _configuration.params,
+        ),
+      ],
+      onPopPage: (route, result) {
+        return false;
       },
     );
   }
 
   @override
   Future<bool> popRoute() async {
-    return true;
+    return false;
   }
 
   @override
@@ -71,6 +74,9 @@ class AppRouter extends RouterDelegate<AppRouterData> implements RouteInformatio
     var uri = Uri(path: configuration.path, queryParameters: configuration.params);
     return RouteInformation(location: uri.toString());
   }
+
+  @override
+  AppRouterData get currentConfiguration => _configuration;
 }
 
 class AutoRouter extends StatefulWidget {
