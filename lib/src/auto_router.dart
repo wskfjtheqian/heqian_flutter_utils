@@ -1,7 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-typedef RouterWidgetBuilder = Widget Function(BuildContext context, Map<String, String> params);
+typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, String> params);
+typedef CheckRouter = bool Function(String path, Map<String, dynamic> params);
+typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child, String path, Map<String, dynamic> params);
+typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
+typedef OpenSubRouter = bool Function(BuildContext context);
+
+mixin RouterDataWidget<T> on Widget {
+  T _data;
+
+  T initData();
+
+  T get data => _data;
+}
 
 class AppRouterData {
   final String path;
@@ -10,53 +24,158 @@ class AppRouterData {
   AppRouterData({this.path, this.params});
 }
 
-class AppRouter extends RouterDelegate<AppRouterData> implements RouteInformationParser<AppRouterData> {
-  AppRouterData _configuration;
+class _HistoryRouter {
+  dynamic _data;
+  bool _isInit = false;
+  AppRouterData _routerData;
+  RouterWidgetBuilder _builder;
+  Completer result = new Completer.sync();
 
-  AppRouter._();
+  _HistoryRouter(this._data, this._routerData, this._builder);
+}
 
-  Map<String, RouterWidgetBuilder> _routers = {};
+class _SubRouterDelegate extends RouterDelegate with ChangeNotifier {
+  CheckRouter _checkRouter;
+  Widget _widget;
 
-  List<void Function()> _listener = [];
-
-  @override
-  void addListener(void Function() listener) {
-    _listener.add(listener);
-  }
-
-  @override
-  void removeListener(void Function() listener) {
-    _listener.remove(listener);
+  set page(Widget widget) {
+    if (_widget != widget) {
+      _widget = widget;
+      notifyListeners();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Navigator(
-      pages: [
-        MaterialPage(
-          child: _routers[_configuration.path]?.call(context, _configuration.params),
-          name: _configuration.path,
-          arguments: _configuration.params,
-        ),
-      ],
-      onPopPage: (route, result) {
-        return false;
-      },
+    return SizedBox(
+      width: double.infinity,
+      height: double.infinity,
+      child: _widget,
     );
   }
 
   @override
-  Future<bool> popRoute() async {
-    return false;
+  Future<bool> popRoute() {}
+
+  @override
+  Future<void> setNewRoutePath(configuration) {}
+}
+
+class SubRouter extends StatefulWidget {
+  final CheckRouter checkRouter;
+  final String prefixPath;
+
+  const SubRouter({Key key, this.checkRouter, this.prefixPath})
+      : assert(null != checkRouter || 0 != (prefixPath.length ?? 0)),
+        super(key: key);
+
+  @override
+  _SubRouterState createState() => _SubRouterState();
+}
+
+class _SubRouterState extends State<SubRouter> {
+  _SubRouterDelegate _delegate = _SubRouterDelegate();
+  _AutoRouterState _routerState;
+
+  @override
+  void initState() {
+    _delegate._checkRouter = widget.checkRouter ?? _checkRouter;
+    super.initState();
+    _routerState = AutoRouter.of(context);
+    _routerState._addSubRouterDelegate(_delegate);
   }
 
   @override
-  Future<void> setNewRoutePath(AppRouterData configuration) {
-    if (_routers.containsKey(_configuration.path)) {
-      this._configuration = configuration;
-      for (var item in _listener) {
-        item?.call();
+  void dispose() {
+    _routerState._removeSubRouterDelegate(_delegate);
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant SubRouter oldWidget) {
+    _delegate._checkRouter = widget.checkRouter ?? _checkRouter;
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Router(routerDelegate: _delegate);
+  }
+
+  bool _checkRouter(String path, Map<String, dynamic> param) {
+    return 0 == (path?.indexOf(widget.prefixPath) ?? -1);
+  }
+}
+
+class AppRouterDelegate extends RouterDelegate<AppRouterData>
+    with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRouterData>
+    implements RouteInformationParser<AppRouterData> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  PageBuilder _pageBuilder;
+
+  OpenSubRouter _openSubRouter;
+
+  AppRouterDelegate._();
+
+  Map<String, RouterWidgetBuilder> _routers = {};
+
+  List<_SubRouterDelegate> _usbDelegateList = [];
+
+  List<_HistoryRouter> _historyList = [];
+
+  @override
+  Widget build(BuildContext context) {
+    var pages = <Page<dynamic>>[];
+    for (var item in _historyList) {
+      var wdiget = item._builder(context, item._routerData.params);
+      if (!item._isInit) {
+        item._data = wdiget.initData();
+        item._isInit = true;
       }
+      wdiget._data = item._data;
+
+      var subRouter = _findSubDelegate(context, item._routerData);
+      if (null == subRouter) {
+        pages.add(_pageBuilder(context, wdiget, item._routerData.path, item._routerData.params));
+      } else {
+        subRouter._widget = wdiget;
+      }
+    }
+    return Navigator(
+      key: _navigatorKey,
+      pages: pages,
+      onPopPage: (route, result) {
+        if (!route.didPop(result)) {
+          return false;
+        }
+        notifyListeners();
+        return true;
+      },
+    );
+  }
+
+  _SubRouterDelegate _findSubDelegate(BuildContext context, AppRouterData configuration) {
+    if (_openSubRouter?.call(context) ?? false) {
+      return null;
+    }
+    _SubRouterDelegate usbDelegate;
+    for (var item in _usbDelegateList) {
+      if (item._checkRouter(configuration.path, configuration.params)) {
+        usbDelegate = item;
+      }
+    }
+    return usbDelegate;
+  }
+
+  @override
+  GlobalKey<NavigatorState> get navigatorKey => _navigatorKey;
+
+  @override
+  Future<void> setNewRoutePath(AppRouterData configuration) {
+    if (_routers.containsKey(configuration.path)) {
+      this._historyList.add(_HistoryRouter(null, configuration, _routers[configuration.path]));
+      notifyListeners();
     }
   }
 
@@ -76,21 +195,83 @@ class AppRouter extends RouterDelegate<AppRouterData> implements RouteInformatio
   }
 
   @override
-  AppRouterData get currentConfiguration => _configuration;
+  AppRouterData get currentConfiguration => this._historyList.isEmpty ? null : this._historyList.last._routerData;
+
+  Future<T> pushNamed<T>(String name, Map<String, dynamic> params) {
+    if (!_routers.containsKey(name)) {
+      throw "Not fond Router by $name";
+    }
+
+    var configuration = AppRouterData(
+      path: name,
+      params: params,
+    );
+    var router = _HistoryRouter(null, configuration, _routers[configuration.path]);
+    this._historyList.add(router);
+    notifyListeners();
+    return router.result.future;
+  }
+
+  Future<T> pushNamedAndRemoveUntil<T>(String name, AutoRoutePredicate predicate, Map<String, dynamic> params) {
+    _historyList.removeWhere((element) {
+      if (predicate?.call(element._routerData) ?? false) {
+        element.result.complete(null);
+        return true;
+      }
+      return false;
+    });
+
+    if (!_routers.containsKey(name)) {
+      throw "Not fond Router by $name";
+    }
+
+    var configuration = AppRouterData(
+      path: name,
+      params: params,
+    );
+    var router = _HistoryRouter(null, configuration, _routers[configuration.path]);
+    this._historyList.add(router);
+    notifyListeners();
+    return router.result.future;
+  }
+
+  void popUntil(AutoRoutePredicate predicate) {
+    _historyList.removeWhere((element) {
+      if (predicate?.call(element._routerData) ?? false) {
+        element.result.complete(null);
+        return true;
+      }
+      return false;
+    });
+    notifyListeners();
+  }
+
+  void pop<T extends Object>(T result) {
+    if (_historyList.isNotEmpty) {
+      _historyList.last.result.complete(result);
+      _historyList.removeLast();
+    }
+    notifyListeners();
+  }
 }
 
 class AutoRouter extends StatefulWidget {
-  final Widget Function(BuildContext context, AppRouter appRouter) builder;
+  final Widget Function(BuildContext context, AppRouterDelegate appRouter) builder;
   final Map<String, RouterWidgetBuilder> routers;
   final String home;
+  final PageBuilder pageBuilder;
+  final OpenSubRouter openSubRouter;
 
   const AutoRouter({
     Key key,
     this.builder,
     this.routers,
     this.home,
+    this.pageBuilder,
+    this.openSubRouter,
   })  : assert(null != builder),
         assert(null != routers),
+        assert(null != pageBuilder),
         super(key: key);
 
   static _AutoRouterState of(BuildContext context) {
@@ -106,30 +287,62 @@ class AutoRouter extends StatefulWidget {
 }
 
 class _AutoRouterState extends State<AutoRouter> {
-  var appRouter = AppRouter._();
+  AppRouterDelegate _delegate = AppRouterDelegate._();
 
   @override
   void initState() {
-    appRouter._routers = widget.routers;
+    _delegate._routers = widget.routers;
+    _delegate._openSubRouter = widget.openSubRouter;
+    _delegate._pageBuilder = widget.pageBuilder;
     var uri = Uri.parse(widget.home ?? "/");
-    appRouter._configuration = AppRouterData(
-      path: uri.path,
-      params: uri.queryParameters,
-    );
+
+    _delegate._historyList.add(_HistoryRouter(
+        null,
+        AppRouterData(
+          path: uri.path,
+          params: uri.queryParameters,
+        ),
+        widget.routers[widget.home ?? "/"]));
     super.initState();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return widget.builder(context, appRouter);
+  void didUpdateWidget(covariant AutoRouter oldWidget) {
+    _delegate._pageBuilder = oldWidget.pageBuilder;
+    _delegate._openSubRouter = widget.openSubRouter;
+    super.didUpdateWidget(oldWidget);
   }
 
-  void pushNamed(String name, {Map<String, dynamic> params}) {
-    appRouter.setNewRoutePath(
-      AppRouterData(
-        path: name,
-        params: params,
-      ),
-    );
+  void _addSubRouterDelegate(_SubRouterDelegate delegate) {
+    _delegate._usbDelegateList.add(delegate);
+  }
+
+  void _removeSubRouterDelegate(_SubRouterDelegate delegate) {
+    _delegate._usbDelegateList.remove(delegate);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(context, _delegate);
+  }
+
+  Future<T> pushNamed<T extends Object>(String name, {Map<String, dynamic> params}) {
+    return _delegate.pushNamed(name, params);
+  }
+
+  Future<T> pushNamedAndRemoveUntil<T extends Object>(
+    String path,
+    AutoRoutePredicate predicate, {
+    Map<String, dynamic> arguments,
+  }) {
+    return _delegate.pushNamedAndRemoveUntil(path, predicate, arguments);
+  }
+
+  void pop<T extends Object>([T result]) {
+    _delegate.pop(result);
+  }
+
+  void popUntil(AutoRoutePredicate predicate) {
+    return _delegate.popUntil(predicate);
   }
 }
