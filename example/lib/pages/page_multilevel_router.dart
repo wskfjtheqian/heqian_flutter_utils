@@ -107,20 +107,28 @@ class SubRouterPage2 extends StatefulWidget with RouterDataWidget<SubRouterPage2
 class _SubRouterPage2State extends State<SubRouterPage2> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.amberAccent,
-      child: Column(
-        children: [
-          Text(widget.data?.name ?? ""),
-          FlatButton(
-            child: Text("set net text"),
-            onPressed: () {
-              setState(() {
-                widget.data?.name = "new Text";
-              });
-            },
-          ),
-        ],
+    return Scaffold(
+      appBar: isSubRouter(context)
+          ? null
+          : AppBar(
+              title: Text("二级页面"),
+            ),
+      body: Container(
+        width: double.infinity,
+        color: Colors.amberAccent,
+        child: Column(
+          children: [
+            Text(widget.data?.name ?? ""),
+            FlatButton(
+              child: Text("set net text"),
+              onPressed: () {
+                setState(() {
+                  widget.data?.name = "new Text";
+                });
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
