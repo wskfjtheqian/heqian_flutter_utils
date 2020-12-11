@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
             "/routerPage": (context, param) => PageMultilevelRouter(),
             "/routerPage/subRouter1": (context, param) => SubRouterPage1(),
             "/routerPage/subRouter2": (context, param) => SubRouterPage2(),
-            "/routerPage/subRouter1/subRouter2": (context, param) => SubRouterPage2(),
+            "/routerPage/subRouter1/subRouter3": (context, param) => SubRouterPage3(),
           },
           pageBuilder: (context, child, path, params) {
             return MaterialPage(child: child, name: path, arguments: params);
@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
             return MaterialApp.router(
               routerDelegate: appRouter,
               routeInformationParser: appRouter,
-              routeInformationProvider: PlatformRouteInformationProvider(initialRouteInformation: RouteInformation(location: "/")),
+              routeInformationProvider:appRouter.provider,
               title: 'Flutter Demo',
               theme: ThemeData(
                 fontFamily: "SourceHanSansCN",

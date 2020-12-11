@@ -25,7 +25,7 @@ class _PageMultilevelRouterState extends State<PageMultilevelRouter> {
                 FlatButton(
                   child: Text("Route1"),
                   onPressed: () {
-                    AutoRouter.of(context).pushNamedAndRemoveUntil("/routerPage/subRouter1", (route) => checkRouter(route));
+                    AutoRouter.of(context).pushNamedAndRemoveUntil("/routerPage/subRouter1", (route) => checkRouter(route),arguments: {"id":"12"});
                   },
                 ),
                 FlatButton(
@@ -37,7 +37,7 @@ class _PageMultilevelRouterState extends State<PageMultilevelRouter> {
                 FlatButton(
                   child: Text("Route1/Route1"),
                   onPressed: () {
-                    AutoRouter.of(context).pushNamed("/routerPage/subRouter1/subRouter2");
+                    AutoRouter.of(context).pushNamed("/routerPage/subRouter1/subRouter3");
                   },
                 ),
                 FlatButton(
@@ -133,3 +133,45 @@ class _SubRouterPage2State extends State<SubRouterPage2> {
     );
   }
 }
+
+
+class SubRouterPage3 extends StatefulWidget with RouterDataWidget {
+  @override
+  _SubRouterPage3State createState() => _SubRouterPage3State();
+
+  @override
+   initData() {
+  }
+}
+
+class _SubRouterPage3State extends State<SubRouterPage3> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: isSubRouter(context)
+          ? null
+          : AppBar(
+        title: Text("三级页面"),
+      ),
+      body: Container(
+        width: double.infinity,
+        color: Colors.grey,
+        child: Column(
+          children: [
+            Text(widget.data?.name ?? ""),
+            FlatButton(
+              child: Text("set net text"),
+              onPressed: () {
+                setState(() {
+                  widget.data?.name = "new Text";
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, String> params);
+typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, dynamic> params);
 typedef CheckRouter = bool Function(String path, Map<String, dynamic> params);
 typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child, String path, Map<String, dynamic> params);
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
@@ -44,7 +44,7 @@ class _HistoryRouter {
   _HistoryRouter(this._routerData, this._builder);
 }
 
-class _BaseRouterDelegate extends RouterDelegate<AppRouterData> with ChangeNotifier {
+class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with ChangeNotifier {
   List<_BaseRouterDelegate> _usbDelegateList = [];
 
   CheckRouter _checkRouter;
@@ -77,7 +77,7 @@ class _BaseRouterDelegate extends RouterDelegate<AppRouterData> with ChangeNotif
   }
 
   List<_HistoryRouter> getWidgetBuilders(BuildContext context) {
-    var builders = <_HistoryRouter>[_HistoryRouter(AppRouterData(), (context, params) => _backgroundBuilder?.call(context) ?? _DefualtWidget())];
+    var builders = <_HistoryRouter>[_HistoryRouter(AppRouterData(path: "/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefualtWidget())];
     for (var item in historyList) {
       if (!_isSubRouter(context, item._routerData)) {
         builders.add(item);
@@ -113,7 +113,7 @@ class _BaseRouterDelegate extends RouterDelegate<AppRouterData> with ChangeNotif
   Future<bool> popRoute() {}
 
   @override
-  Future<void> setNewRoutePath(AppRouterData configuration) {}
+  Future<void> setNewRoutePath(List<AppRouterData> configuration) {}
 }
 
 class SubRouter extends StatefulWidget {
@@ -182,8 +182,14 @@ class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter> extend
   }
 }
 
-class AppRouterDelegate extends _BaseRouterDelegate with PopNavigatorRouterDelegateMixin<AppRouterData> implements RouteInformationParser<AppRouterData> {
+class AppRouterDelegate extends _BaseRouterDelegate
+    with PopNavigatorRouterDelegateMixin<List<AppRouterData>>
+    implements RouteInformationParser<List<AppRouterData>> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  RouteInformationProvider _provider;
+
+  RouteInformationProvider get provider => _provider;
 
   AppRouterDelegate._();
 
@@ -239,35 +245,48 @@ class AppRouterDelegate extends _BaseRouterDelegate with PopNavigatorRouterDeleg
     );
   }
 
-  @override
-  Future<AppRouterData> parseRouteInformation(RouteInformation routeInformation) async {
-    var uri = Uri.parse(routeInformation.location);
-    return AppRouterData(
-      path: uri.path,
-      params: uri.queryParameters,
-    );
+  bool _checkHistory(String path) {
+    for (var item in historyList) {
+      if (item._routerData.path.startsWith(path)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
-  RouteInformation restoreRouteInformation(AppRouterData configuration) {
-    var uri = Uri(path: configuration.path, queryParameters: configuration.params);
+  Future<List<AppRouterData>> parseRouteInformation(RouteInformation routeInformation) async {
+    var uri = Uri.parse(routeInformation.location);
+    return _paresPath(uri.path, uri.queryParameters);
+  }
+
+  @override
+  RouteInformation restoreRouteInformation(List<AppRouterData> configuration) {
+    var last = configuration.last;
+    var uri = Uri(path: last.path, queryParameters: last.params);
     return RouteInformation(location: uri.toString());
   }
 
   @override
-  AppRouterData get currentConfiguration => this._historyList.isEmpty ? null : this._historyList.last._routerData;
+  List<AppRouterData> get currentConfiguration => [this._historyList.isEmpty ? null : this._historyList.last._routerData];
 
   @override
-  Future<void> setNewRoutePath(AppRouterData configuration) {
-    if (_routers.containsKey(configuration.path)) {
-      _addHistoryList(_HistoryRouter(configuration, _routers[configuration.path]));
+  Future<void> setNewRoutePath(List<AppRouterData> configuration) {
+    if (configuration.isNotEmpty) {
+      _addHistoryList(configuration);
     }
   }
 
-  _HistoryRouter _addHistoryList(_HistoryRouter historyRouter) {
-    this._historyList.add(historyRouter);
-    notifyListeners();
-    return historyRouter;
+  _HistoryRouter _addHistoryList(List<AppRouterData> configuration) {
+    if (configuration.isNotEmpty) {
+      for (var item in configuration) {
+        this._historyList.add(_HistoryRouter(item, _routers[item.path]));
+      }
+
+      notifyListeners();
+      return this._historyList.last;
+    }
+    return null;
   }
 
   Future<T> pushNamed<T>(String name, Map<String, dynamic> params) {
@@ -275,12 +294,8 @@ class AppRouterDelegate extends _BaseRouterDelegate with PopNavigatorRouterDeleg
       throw "Not fond Router by $name";
     }
 
-    var configuration = AppRouterData(
-      path: name,
-      params: params,
-    );
-    var router = _addHistoryList(_HistoryRouter(configuration, _routers[configuration.path]));
-    return router.result.future;
+    var router = _addHistoryList(_paresPath(name, params));
+    return router?.result?.future;
   }
 
   Future<T> pushNamedAndRemoveUntil<T>(String name, AutoRoutePredicate predicate, Map<String, dynamic> params) {
@@ -296,12 +311,8 @@ class AppRouterDelegate extends _BaseRouterDelegate with PopNavigatorRouterDeleg
       throw "Not fond Router by $name";
     }
 
-    var configuration = AppRouterData(
-      path: name,
-      params: params,
-    );
-    var router = _addHistoryList(_HistoryRouter(configuration, _routers[configuration.path]));
-    return router.result.future;
+    var router = _addHistoryList(_paresPath(name, params));
+    return router?.result?.future;
   }
 
   void popUntil(AutoRoutePredicate predicate) {
@@ -321,6 +332,24 @@ class AppRouterDelegate extends _BaseRouterDelegate with PopNavigatorRouterDeleg
       _historyList.removeLast();
     }
     notifyListeners();
+  }
+
+  List<AppRouterData> _paresPath(String name, Map<String, dynamic> params) {
+    var paths = name.split("/");
+    var ret = <AppRouterData>[];
+    var path = "";
+    for (var i = 1; i < paths.length; i++) {
+      path += "/" + paths[i];
+      if (!_checkHistory(path)) {
+        ret.add(
+          AppRouterData(
+            path: path,
+            params: params,
+          ),
+        );
+      }
+    }
+    return ret;
   }
 }
 
@@ -359,6 +388,7 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
 
   @override
   void initState() {
+    _delegate._provider = PlatformRouteInformationProvider(initialRouteInformation: RouteInformation(location: widget.home));
     _delegate._routers = widget.routers;
     _delegate._pageBuilder = widget.pageBuilder;
     _delegate._backgroundBuilder = widget.backgroundBuilder;
