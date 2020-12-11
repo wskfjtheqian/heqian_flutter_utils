@@ -68,7 +68,7 @@ class MyHomePage extends StatefulWidget with RouterDataWidget {
   _MyHomePageState createState() => _MyHomePageState();
 
   @override
-  initData() {
+  initData(BuildContext context) {
     return null;
   }
 }
@@ -132,7 +132,7 @@ class ToastPage extends StatefulWidget with RouterDataWidget {
   _ToastPageState createState() => _ToastPageState();
 
   @override
-  initData() {}
+  initData(BuildContext context) {}
 }
 
 class _ToastPageState extends State<ToastPage> {

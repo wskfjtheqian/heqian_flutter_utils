@@ -68,7 +68,7 @@ class SubRouterPage1 extends StatefulWidget with RouterDataWidget {
   _SubRouterPage1State createState() => _SubRouterPage1State();
 
   @override
-  initData() {}
+  initData(BuildContext context) {}
 }
 
 class _SubRouterPage1State extends State<SubRouterPage1> {
@@ -99,7 +99,7 @@ class SubRouterPage2 extends StatefulWidget with RouterDataWidget<SubRouterPage2
   _SubRouterPage2State createState() => _SubRouterPage2State();
 
   @override
-  SubRouterPage2Data initData() {
+  SubRouterPage2Data initData(BuildContext context) {
     return SubRouterPage2Data();
   }
 }
@@ -140,7 +140,7 @@ class SubRouterPage3 extends StatefulWidget with RouterDataWidget {
   _SubRouterPage3State createState() => _SubRouterPage3State();
 
   @override
-   initData() {
+   initData(BuildContext context) {
   }
 }
 

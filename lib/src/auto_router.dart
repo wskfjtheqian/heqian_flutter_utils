@@ -3,16 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, dynamic> params);
+typedef RouterWidgetBuilder = RouterDataWidget Function(
+    BuildContext context, Map<String, dynamic> params);
 typedef CheckRouter = bool Function(String path, Map<String, dynamic> params);
-typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child, String path, Map<String, dynamic> params);
+typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child,
+    String path, Map<String, dynamic> params);
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 
 mixin RouterDataWidget<T> on Widget {
   T _data;
 
-  T initData();
+  T initData(BuildContext context);
 
   T get data => _data;
 }
@@ -31,7 +33,7 @@ class _DefualtWidget extends StatelessWidget with RouterDataWidget {
   }
 
   @override
-  initData() {}
+  initData(BuildContext context) {}
 }
 
 class _HistoryRouter {
@@ -44,7 +46,8 @@ class _HistoryRouter {
   _HistoryRouter(this._routerData, this._builder);
 }
 
-class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with ChangeNotifier {
+class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>>
+    with ChangeNotifier {
   List<_BaseRouterDelegate> _usbDelegateList = [];
 
   CheckRouter _checkRouter;
@@ -63,9 +66,10 @@ class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Chang
   Widget build(BuildContext context) {
     List<_HistoryRouter> builders = getWidgetBuilders(context);
 
-    var wdiget = builders.last._builder(context, builders.last._routerData.params);
+    var wdiget =
+        builders.last._builder(context, builders.last._routerData.params);
     if (!builders.last._isInit) {
-      builders.last._data = wdiget.initData();
+      builders.last._data = wdiget.initData(context);
       builders.last._isInit = true;
     }
     wdiget._data = builders.last._data;
@@ -77,7 +81,12 @@ class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Chang
   }
 
   List<_HistoryRouter> getWidgetBuilders(BuildContext context) {
-    var builders = <_HistoryRouter>[_HistoryRouter(AppRouterData(path: "/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefualtWidget())];
+    var builders = <_HistoryRouter>[
+      _HistoryRouter(
+          AppRouterData(path: "/"),
+          (context, params) =>
+              _backgroundBuilder?.call(context) ?? _DefualtWidget())
+    ];
     for (var item in historyList) {
       if (!_isSubRouter(context, item._routerData)) {
         builders.add(item);
@@ -130,10 +139,12 @@ class SubRouter extends StatefulWidget {
         super(key: key);
 
   @override
-  _SubRouterState createState() => _SubRouterState<_BaseRouterDelegate, SubRouter>(_BaseRouterDelegate());
+  _SubRouterState createState() =>
+      _SubRouterState<_BaseRouterDelegate, SubRouter>(_BaseRouterDelegate());
 }
 
-class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter> extends State<T> {
+class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter>
+    extends State<T> {
   final E _delegate;
   _SubRouterState _routerState;
 
@@ -213,11 +224,13 @@ class AppRouterDelegate extends _BaseRouterDelegate
     for (var item in buildes) {
       var widget = item._builder(context, item._routerData.params);
       if (!item._isInit) {
-        item._data = widget.initData();
+        item._data =
+            widget.initData(navigatorKey.currentState?.overlay?.context);
         item._isInit = true;
       }
       widget._data = item._data;
-      pages.add(_pageBuilder(context, widget, item._routerData.path, item._routerData.params));
+      pages.add(_pageBuilder(
+          context, widget, item._routerData.path, item._routerData.params));
     }
 
     return Navigator(
@@ -232,7 +245,8 @@ class AppRouterDelegate extends _BaseRouterDelegate
             element.result.complete(result);
             return true;
           }
-          if (element._routerData.path.startsWith(route.settings.name) ?? false) {
+          if (element._routerData.path.startsWith(route.settings.name) ??
+              false) {
             element.result.complete(null);
             return true;
           }
@@ -255,7 +269,8 @@ class AppRouterDelegate extends _BaseRouterDelegate
   }
 
   @override
-  Future<List<AppRouterData>> parseRouteInformation(RouteInformation routeInformation) async {
+  Future<List<AppRouterData>> parseRouteInformation(
+      RouteInformation routeInformation) async {
     var uri = Uri.parse(routeInformation.location);
     return _paresPath(uri.path, uri.queryParameters);
   }
@@ -268,7 +283,8 @@ class AppRouterDelegate extends _BaseRouterDelegate
   }
 
   @override
-  List<AppRouterData> get currentConfiguration => [this._historyList.isEmpty ? null : this._historyList.last._routerData];
+  List<AppRouterData> get currentConfiguration =>
+      [this._historyList.isEmpty ? null : this._historyList.last._routerData];
 
   @override
   Future<void> setNewRoutePath(List<AppRouterData> configuration) {
@@ -298,7 +314,8 @@ class AppRouterDelegate extends _BaseRouterDelegate
     return router?.result?.future;
   }
 
-  Future<T> pushNamedAndRemoveUntil<T>(String name, AutoRoutePredicate predicate, Map<String, dynamic> params) {
+  Future<T> pushNamedAndRemoveUntil<T>(
+      String name, AutoRoutePredicate predicate, Map<String, dynamic> params) {
     _historyList.removeWhere((element) {
       if (predicate?.call(element._routerData) ?? false) {
         element.result.complete(null);
@@ -354,7 +371,8 @@ class AppRouterDelegate extends _BaseRouterDelegate
 }
 
 class AutoRouter extends SubRouter {
-  final Widget Function(BuildContext context, AppRouterDelegate appRouter) builder;
+  final Widget Function(BuildContext context, AppRouterDelegate appRouter)
+      builder;
   final Map<String, RouterWidgetBuilder> routers;
   final String home;
   final PageBuilder pageBuilder;
@@ -388,7 +406,8 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
 
   @override
   void initState() {
-    _delegate._provider = PlatformRouteInformationProvider(initialRouteInformation: RouteInformation(location: widget.home));
+    _delegate._provider = PlatformRouteInformationProvider(
+        initialRouteInformation: RouteInformation(location: widget.home));
     _delegate._routers = widget.routers;
     _delegate._pageBuilder = widget.pageBuilder;
     _delegate._backgroundBuilder = widget.backgroundBuilder;
@@ -433,5 +452,6 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
 }
 
 bool isSubRouter(BuildContext context) {
-  return context.findRootAncestorStateOfType<_SubRouterState>() != context.findAncestorStateOfType<_SubRouterState>();
+  return context.findRootAncestorStateOfType<_SubRouterState>() !=
+      context.findAncestorStateOfType<_SubRouterState>();
 }
