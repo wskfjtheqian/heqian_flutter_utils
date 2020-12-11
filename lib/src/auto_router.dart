@@ -24,6 +24,16 @@ class AppRouterData {
   AppRouterData({this.path, this.params});
 }
 
+class _DefualtWidget extends StatelessWidget with RouterDataWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(color: Color(0xffffffff));
+  }
+
+  @override
+  initData() {}
+}
+
 class _HistoryRouter {
   dynamic _data;
   bool _isInit = false;
@@ -31,27 +41,48 @@ class _HistoryRouter {
   RouterWidgetBuilder _builder;
   Completer result = new Completer.sync();
 
-  _HistoryRouter(this._data, this._routerData, this._builder);
+  _HistoryRouter(this._routerData, this._builder);
 }
 
 class _SubRouterDelegate extends RouterDelegate with ChangeNotifier {
   CheckRouter _checkRouter;
-  Widget _widget;
 
-  set page(Widget widget) {
-    if (_widget != widget) {
-      _widget = widget;
-      notifyListeners();
-    }
-  }
+  WidgetBuilder _defualtBuilder;
+
+  AppRouterDelegate _rootDelegate;
 
   @override
   Widget build(BuildContext context) {
+    var builders = <_HistoryRouter>[_HistoryRouter(AppRouterData(), (context, params) => _defualtBuilder?.call(context) ?? _DefualtWidget())];
+    for (var item in _rootDelegate._historyList) {
+      if (_isNotSubDelegate(context, item._routerData)) {
+        builders.add(item);
+      }
+    }
+
+    var wdiget = builders.last._builder(context, builders.last._routerData.params);
+    if (!builders.last._isInit) {
+      builders.last._data = wdiget.initData();
+      builders.last._isInit = true;
+    }
+    wdiget._data = builders.last._data;
+
     return SizedBox(
-      width: double.infinity,
       height: double.infinity,
-      child: _widget,
+      child: wdiget,
     );
+  }
+
+  bool _isNotSubDelegate(BuildContext context, AppRouterData configuration) {
+    if (_checkRouter(configuration.path, configuration.params)) {
+      for (var item in _rootDelegate._usbDelegateList) {
+        if (this != item && !item._checkRouter(configuration.path, configuration.params)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   @override
@@ -64,9 +95,14 @@ class _SubRouterDelegate extends RouterDelegate with ChangeNotifier {
 class SubRouter extends StatefulWidget {
   final CheckRouter checkRouter;
   final String prefixPath;
+  final WidgetBuilder defualtBuilder;
 
-  const SubRouter({Key key, this.checkRouter, this.prefixPath})
-      : assert(null != checkRouter || 0 != (prefixPath.length ?? 0)),
+  const SubRouter({
+    Key key,
+    this.checkRouter,
+    this.prefixPath,
+    this.defualtBuilder,
+  })  : assert(null != checkRouter || 0 != (prefixPath.length ?? 0)),
         super(key: key);
 
   @override
@@ -79,9 +115,12 @@ class _SubRouterState extends State<SubRouter> {
 
   @override
   void initState() {
-    _delegate._checkRouter = widget.checkRouter ?? _checkRouter;
     super.initState();
     _routerState = AutoRouter.of(context);
+    _delegate._rootDelegate = _routerState._delegate;
+
+    _delegate._checkRouter = widget.checkRouter ?? _checkRouter;
+    _delegate._defualtBuilder = widget.defualtBuilder;
     _routerState._addSubRouterDelegate(_delegate);
   }
 
@@ -94,6 +133,7 @@ class _SubRouterState extends State<SubRouter> {
   @override
   void didUpdateWidget(covariant SubRouter oldWidget) {
     _delegate._checkRouter = widget.checkRouter ?? _checkRouter;
+    _delegate._defualtBuilder = widget.defualtBuilder;
     super.didUpdateWidget(oldWidget);
   }
 
@@ -103,7 +143,7 @@ class _SubRouterState extends State<SubRouter> {
   }
 
   bool _checkRouter(String path, Map<String, dynamic> param) {
-    return 0 == (path?.indexOf(widget.prefixPath) ?? -1);
+    return path?.startsWith(widget.prefixPath) ?? false;
   }
 }
 
@@ -113,8 +153,6 @@ class AppRouterDelegate extends RouterDelegate<AppRouterData>
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   PageBuilder _pageBuilder;
-
-  OpenSubRouter _openSubRouter;
 
   AppRouterDelegate._();
 
@@ -128,19 +166,20 @@ class AppRouterDelegate extends RouterDelegate<AppRouterData>
   Widget build(BuildContext context) {
     var pages = <Page<dynamic>>[];
     for (var item in _historyList) {
-      var wdiget = item._builder(context, item._routerData.params);
-      if (!item._isInit) {
-        item._data = wdiget.initData();
-        item._isInit = true;
-      }
-      wdiget._data = item._data;
-
-      var subRouter = _findSubDelegate(context, item._routerData);
-      if (null == subRouter) {
+      if (_isNotSubDelegate(context, item._routerData)) {
+        var wdiget = item._builder(context, item._routerData.params);
+        if (!item._isInit) {
+          item._data = wdiget.initData();
+          item._isInit = true;
+        }
+        wdiget._data = item._data;
         pages.add(_pageBuilder(context, wdiget, item._routerData.path, item._routerData.params));
-      } else {
-        subRouter._widget = wdiget;
       }
+    }
+    if (pages.isEmpty) {
+      pages.add(
+        _pageBuilder(context, _DefualtWidget(), "/", null),
+      );
     }
     return Navigator(
       key: _navigatorKey,
@@ -149,23 +188,31 @@ class AppRouterDelegate extends RouterDelegate<AppRouterData>
         if (!route.didPop(result)) {
           return false;
         }
+        _historyList.removeWhere((element) {
+          if (route.settings.name == element._routerData.path) {
+            element.result.complete(result);
+            return true;
+          }
+          if (element._routerData.path.startsWith(route.settings.name) ?? false) {
+            element.result.complete(null);
+            return true;
+          }
+          return false;
+        });
+
         notifyListeners();
         return true;
       },
     );
   }
 
-  _SubRouterDelegate _findSubDelegate(BuildContext context, AppRouterData configuration) {
-    if (_openSubRouter?.call(context) ?? false) {
-      return null;
-    }
-    _SubRouterDelegate usbDelegate;
+  bool _isNotSubDelegate(BuildContext context, AppRouterData configuration) {
     for (var item in _usbDelegateList) {
       if (item._checkRouter(configuration.path, configuration.params)) {
-        usbDelegate = item;
+        return false;
       }
     }
-    return usbDelegate;
+    return true;
   }
 
   @override
@@ -174,9 +221,14 @@ class AppRouterDelegate extends RouterDelegate<AppRouterData>
   @override
   Future<void> setNewRoutePath(AppRouterData configuration) {
     if (_routers.containsKey(configuration.path)) {
-      this._historyList.add(_HistoryRouter(null, configuration, _routers[configuration.path]));
-      notifyListeners();
+      _addHistoryList(_HistoryRouter(configuration, _routers[configuration.path]));
     }
+  }
+
+  _HistoryRouter _addHistoryList(_HistoryRouter historyRouter) {
+    this._historyList.add(historyRouter);
+    notifyListeners();
+    return historyRouter;
   }
 
   @override
@@ -197,6 +249,20 @@ class AppRouterDelegate extends RouterDelegate<AppRouterData>
   @override
   AppRouterData get currentConfiguration => this._historyList.isEmpty ? null : this._historyList.last._routerData;
 
+  void _addSubRouterDelegate(_SubRouterDelegate delegate) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      _usbDelegateList.add(delegate);
+      notifyListeners();
+    });
+  }
+
+  void _removeSubRouterDelegate(_SubRouterDelegate delegate) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      _usbDelegateList.remove(delegate);
+      notifyListeners();
+    });
+  }
+
   Future<T> pushNamed<T>(String name, Map<String, dynamic> params) {
     if (!_routers.containsKey(name)) {
       throw "Not fond Router by $name";
@@ -206,9 +272,7 @@ class AppRouterDelegate extends RouterDelegate<AppRouterData>
       path: name,
       params: params,
     );
-    var router = _HistoryRouter(null, configuration, _routers[configuration.path]);
-    this._historyList.add(router);
-    notifyListeners();
+    var router = _addHistoryList(_HistoryRouter(configuration, _routers[configuration.path]));
     return router.result.future;
   }
 
@@ -229,9 +293,7 @@ class AppRouterDelegate extends RouterDelegate<AppRouterData>
       path: name,
       params: params,
     );
-    var router = _HistoryRouter(null, configuration, _routers[configuration.path]);
-    this._historyList.add(router);
-    notifyListeners();
+    var router = _addHistoryList(_HistoryRouter(configuration, _routers[configuration.path]));
     return router.result.future;
   }
 
@@ -260,7 +322,6 @@ class AutoRouter extends StatefulWidget {
   final Map<String, RouterWidgetBuilder> routers;
   final String home;
   final PageBuilder pageBuilder;
-  final OpenSubRouter openSubRouter;
 
   const AutoRouter({
     Key key,
@@ -268,7 +329,6 @@ class AutoRouter extends StatefulWidget {
     this.routers,
     this.home,
     this.pageBuilder,
-    this.openSubRouter,
   })  : assert(null != builder),
         assert(null != routers),
         assert(null != pageBuilder),
@@ -292,33 +352,22 @@ class _AutoRouterState extends State<AutoRouter> {
   @override
   void initState() {
     _delegate._routers = widget.routers;
-    _delegate._openSubRouter = widget.openSubRouter;
     _delegate._pageBuilder = widget.pageBuilder;
-    var uri = Uri.parse(widget.home ?? "/");
-
-    _delegate._historyList.add(_HistoryRouter(
-        null,
-        AppRouterData(
-          path: uri.path,
-          params: uri.queryParameters,
-        ),
-        widget.routers[widget.home ?? "/"]));
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant AutoRouter oldWidget) {
     _delegate._pageBuilder = oldWidget.pageBuilder;
-    _delegate._openSubRouter = widget.openSubRouter;
     super.didUpdateWidget(oldWidget);
   }
 
   void _addSubRouterDelegate(_SubRouterDelegate delegate) {
-    _delegate._usbDelegateList.add(delegate);
+    _delegate._addSubRouterDelegate(delegate);
   }
 
   void _removeSubRouterDelegate(_SubRouterDelegate delegate) {
-    _delegate._usbDelegateList.remove(delegate);
+    _delegate._removeSubRouterDelegate(delegate);
   }
 
   @override

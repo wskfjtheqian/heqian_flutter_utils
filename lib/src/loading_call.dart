@@ -133,11 +133,14 @@ abstract class _Call {
     showToast(_context, "$value");
   }
 
-  Future<T> call<T>(LoadingStateCall call, {bool isShowError = false}) async {
+  Future<T> call<T>(LoadingStateCall call, {bool isShowError = false, Duration duration = const Duration(milliseconds: 500)}) async {
     var _loadingController = showLoading(_context, msg: _text);
     try {
       _error = null;
-      return await Future.wait([call(this), Future.delayed(Duration(seconds: 1))]).then((value) => value[0]);
+      if (null == duration) {
+        return call(this);
+      }
+      return await Future.wait([call(this), Future.delayed(duration)]).then((value) => value[0]);
     } catch (e) {
       if (isShowError) {
         error = e;

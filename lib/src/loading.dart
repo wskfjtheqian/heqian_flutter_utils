@@ -81,7 +81,13 @@ LoadingController showLoading(
     );
   });
 
-  Overlay.of(context, rootOverlay: rootOverlay).insert(overlay);
+  OverlayState overlayState;
+  if (context is StatefulElement && context.state is OverlayState) {
+    overlayState = context.state as OverlayState;
+  } else {
+    overlayState = context.findRootAncestorStateOfType<OverlayState>();
+  }
+  overlayState.insert(overlay);
   return controller;
 }
 
@@ -164,8 +170,7 @@ class LoadingTheme extends InheritedTheme {
   }) : super(key: key, child: child);
 
   static LoadingThemeData of(BuildContext context) {
-    final LoadingTheme inheritedButtonTheme =
-        context.dependOnInheritedWidgetOfExactType<LoadingTheme>();
+    final LoadingTheme inheritedButtonTheme = context.dependOnInheritedWidgetOfExactType<LoadingTheme>();
     return inheritedButtonTheme?.data;
   }
 
@@ -176,11 +181,8 @@ class LoadingTheme extends InheritedTheme {
 
   @override
   Widget wrap(BuildContext context, Widget child) {
-    final LoadingTheme ancestorTheme =
-        context.findAncestorWidgetOfExactType<LoadingTheme>();
-    return identical(this, ancestorTheme)
-        ? child
-        : LoadingTheme.fromLoadingThemeData(data: data, child: child);
+    final LoadingTheme ancestorTheme = context.findAncestorWidgetOfExactType<LoadingTheme>();
+    return identical(this, ancestorTheme) ? child : LoadingTheme.fromLoadingThemeData(data: data, child: child);
   }
 
   const LoadingTheme.fromLoadingThemeData({
@@ -221,14 +223,12 @@ class _LoadingBody extends StatefulWidget {
   __LoadingState createState() => __LoadingState();
 }
 
-class __LoadingState extends State<_LoadingBody>
-    with SingleTickerProviderStateMixin {
+class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateMixin {
   AnimationController _controller;
 
   @override
   void initState() {
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 200));
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     _controller.addStatusListener(_onStatusListener);
     _controller.addListener(_onListener);
     _controller.forward();
@@ -262,8 +262,7 @@ class __LoadingState extends State<_LoadingBody>
     if (null != (widget.textStyle ?? theme?.textStyle)) {
       textStyle = (widget.textStyle ?? theme?.textStyle).merge(textStyle);
     }
-    Widget indicator =
-        (widget.indicatorBuilder ?? theme?.indicatorBuilder)?.call(context);
+    Widget indicator = (widget.indicatorBuilder ?? theme?.indicatorBuilder)?.call(context);
 
     Widget child = Align(
       alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.2)),
@@ -272,8 +271,7 @@ class __LoadingState extends State<_LoadingBody>
         child: Container(
           decoration: BoxDecoration(
             color: widget.color ?? (theme?.color ?? Color(0x50000000)),
-            borderRadius: BorderRadius.all(
-                widget.radius ?? (theme?.radius ?? Radius.circular(8))),
+            borderRadius: BorderRadius.all(widget.radius ?? (theme?.radius ?? Radius.circular(8))),
           ),
           padding: widget.padding ?? (theme?.padding ?? EdgeInsets.all(16)),
           child: Column(

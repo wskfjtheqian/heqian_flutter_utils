@@ -43,7 +43,13 @@ showToast(
       ),
     );
   });
-  Overlay.of(context, rootOverlay: rootOverlay).insert(overlay);
+  OverlayState overlayState;
+  if (context is StatefulElement && context.state is OverlayState) {
+    overlayState = context.state as OverlayState;
+  } else {
+    overlayState = context.findRootAncestorStateOfType<OverlayState>();
+  }
+  overlayState.insert(overlay);
   return controller;
 }
 
