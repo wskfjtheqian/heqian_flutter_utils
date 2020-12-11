@@ -119,13 +119,13 @@ class _BaseRouterDelegate extends RouterDelegate<AppRouterData> with ChangeNotif
 class SubRouter extends StatefulWidget {
   final CheckRouter checkRouter;
   final String prefixPath;
-  final WidgetBuilder defualtBuilder;
+  final WidgetBuilder backgroundBuilder;
 
   const SubRouter({
     Key key,
     this.checkRouter,
     this.prefixPath,
-    this.defualtBuilder,
+    this.backgroundBuilder,
   })  : assert(null != checkRouter || 0 != (prefixPath.length ?? 0)),
         super(key: key);
 
@@ -148,7 +148,7 @@ class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter> extend
       _routerState._addSubRouterDelegate(_delegate);
     }
     _delegate._checkRouter = widget.checkRouter ?? _checkRouter;
-    _delegate._backgroundBuilder = widget.defualtBuilder;
+    _delegate._backgroundBuilder = widget.backgroundBuilder;
   }
 
   @override
@@ -160,7 +160,7 @@ class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter> extend
   @override
   void didUpdateWidget(covariant SubRouter oldWidget) {
     _delegate._checkRouter = oldWidget.checkRouter ?? _checkRouter;
-    _delegate._backgroundBuilder = oldWidget.defualtBuilder;
+    _delegate._backgroundBuilder = oldWidget.backgroundBuilder;
     super.didUpdateWidget(oldWidget);
   }
 
@@ -336,10 +336,11 @@ class AutoRouter extends SubRouter {
     this.routers,
     this.home,
     this.pageBuilder,
+    WidgetBuilder backgroundBuilder,
   })  : assert(null != builder),
         assert(null != routers),
         assert(null != pageBuilder),
-        super(key: key, prefixPath: home);
+        super(key: key, prefixPath: home, backgroundBuilder: backgroundBuilder);
 
   static _AutoRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _AutoRouterState) {
@@ -360,6 +361,7 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
   void initState() {
     _delegate._routers = widget.routers;
     _delegate._pageBuilder = widget.pageBuilder;
+    _delegate._backgroundBuilder = widget.backgroundBuilder;
     super.initState();
   }
 
@@ -367,6 +369,7 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
   void didUpdateWidget(covariant AutoRouter oldWidget) {
     _delegate._routers = oldWidget.routers;
     _delegate._pageBuilder = oldWidget.pageBuilder;
+    _delegate._backgroundBuilder = oldWidget.backgroundBuilder;
     super.didUpdateWidget(oldWidget);
   }
 
@@ -400,5 +403,5 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
 }
 
 bool isSubRouter(BuildContext context) {
-  return  context.findRootAncestorStateOfType<_SubRouterState>() != context.findAncestorStateOfType<_SubRouterState>();
+  return context.findRootAncestorStateOfType<_SubRouterState>() != context.findAncestorStateOfType<_SubRouterState>();
 }
