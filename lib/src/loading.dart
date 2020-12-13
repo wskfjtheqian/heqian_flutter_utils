@@ -189,8 +189,7 @@ class LoadingTheme extends InheritedTheme {
     Key key,
     @required this.data,
     Widget child,
-  })  : assert(data != null),
-        super(key: key, child: child);
+  }) : super(key: key, child: child);
 }
 
 class _LoadingBody extends StatefulWidget {
