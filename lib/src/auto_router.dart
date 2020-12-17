@@ -9,12 +9,54 @@ typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child,
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 
-mixin RouterDataWidget<T> on Widget {
+mixin RouterDataWidget<T extends ChangeNotifier> on Widget {
   T _data;
 
   T initData(BuildContext context);
 
   T get data => _data;
+}
+
+mixin RouterDataListener<T extends StatefulWidget> implements State<T> {
+  @override
+  void initState() {
+    if (widget is RouterDataWidget) {
+      var data = (widget as RouterDataWidget).data;
+      if (null != data && data is Listenable) {
+        data.addListener(_onChangeNotifier);
+      }
+    }
+  }
+
+  void _onChangeNotifier() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    if (widget is RouterDataWidget) {
+      var data = (widget as RouterDataWidget).data;
+      if (null != data && data is Listenable) {
+        data.removeListener(_onChangeNotifier);
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant T oldWidget) {
+    if (oldWidget is RouterDataWidget) {
+      var data = (oldWidget as RouterDataWidget).data;
+      if (null != data && data is Listenable) {
+        data.removeListener(_onChangeNotifier);
+      }
+    }
+    if (widget is RouterDataWidget) {
+      var data = (widget as RouterDataWidget).data;
+      if (null != data && data is Listenable) {
+        data.addListener(_onChangeNotifier);
+      }
+    }
+  }
 }
 
 class AppRouterData {
@@ -24,6 +66,7 @@ class AppRouterData {
   AppRouterData({this.path, this.params});
 }
 
+// ignore: must_be_immutable
 class _DefualtWidget extends StatelessWidget with RouterDataWidget {
   @override
   Widget build(BuildContext context) {
@@ -31,11 +74,13 @@ class _DefualtWidget extends StatelessWidget with RouterDataWidget {
   }
 
   @override
-  initData(BuildContext context) {}
+  initData(BuildContext context) {
+    return null;
+  }
 }
 
 class _HistoryRouter {
-  dynamic _data;
+  ChangeNotifier _data;
   bool _isInit = false;
   AppRouterData _routerData;
   RouterWidgetBuilder _builder;
@@ -113,10 +158,12 @@ class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Chang
   }
 
   @override
-  Future<bool> popRoute() {}
+  Future<bool> popRoute() async {
+    return true;
+  }
 
   @override
-  Future<void> setNewRoutePath(List<AppRouterData> configuration) {}
+  Future<void> setNewRoutePath(List<AppRouterData> configuration) async {}
 }
 
 class SubRouter extends StatefulWidget {
@@ -129,8 +176,7 @@ class SubRouter extends StatefulWidget {
     this.checkRouter,
     this.prefixPath,
     this.backgroundBuilder,
-  })
-      : assert(null != checkRouter || 0 != (prefixPath.length ?? 0)),
+  })  : assert(null != checkRouter || 0 != (prefixPath.length ?? 0)),
         super(key: key);
 
   @override
@@ -251,7 +297,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
 
   bool _checkHistory(String path) {
     for (var item in historyList) {
-      if (item._routerData?.path?.startsWith(path)) {
+      if (item._routerData?.path?.startsWith(path) ?? false) {
         return true;
       }
     }
@@ -275,7 +321,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
   List<AppRouterData> get currentConfiguration => [this._historyList.isEmpty ? null : this._historyList.last._routerData];
 
   @override
-  Future<void> setNewRoutePath(List<AppRouterData> configuration) {
+  Future<void> setNewRoutePath(List<AppRouterData> configuration) async {
     if (configuration.isNotEmpty) {
       _addHistoryList(configuration);
     }
@@ -306,6 +352,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
     _historyList.removeWhere((element) {
       if (predicate?.call(element._routerData) ?? false) {
         element.result.complete(null);
+        element._data?.dispose();
         return true;
       }
       return false;
@@ -323,6 +370,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
     _historyList.removeWhere((element) {
       if (predicate?.call(element._routerData) ?? false) {
         element.result.complete(null);
+        element._data?.dispose();
         return true;
       }
       return false;
@@ -334,6 +382,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
     if (_historyList.isNotEmpty) {
       _historyList.last.result.complete(result);
       _historyList.removeLast();
+      _historyList.last._data?.dispose();
     }
     notifyListeners();
   }
@@ -370,8 +419,7 @@ class AutoRouter extends SubRouter {
     this.home,
     this.pageBuilder,
     WidgetBuilder backgroundBuilder,
-  })
-      : assert(null != builder),
+  })  : assert(null != builder),
         assert(null != routers),
         assert(null != pageBuilder),
         super(key: key, prefixPath: home, backgroundBuilder: backgroundBuilder);
@@ -413,16 +461,18 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
     return widget.builder?.call(context, _delegate);
   }
 
-  Future<T> pushNamed<T extends Object>(String name, {
+  Future<T> pushNamed<T extends Object>(
+    String name, {
     Map<String, dynamic> params,
   }) {
     return _delegate.pushNamed(name, params);
   }
 
-  Future<T> pushNamedAndRemoveUntil<T extends Object>(String path,
-      AutoRoutePredicate predicate, {
-        Map<String, dynamic> arguments,
-      }) {
+  Future<T> pushNamedAndRemoveUntil<T extends Object>(
+    String path,
+    AutoRoutePredicate predicate, {
+    Map<String, dynamic> arguments,
+  }) {
     return _delegate.pushNamedAndRemoveUntil(path, predicate, arguments);
   }
 

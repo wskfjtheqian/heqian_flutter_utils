@@ -92,7 +92,7 @@ class _SubRouterPage1State extends State<SubRouterPage1> {
   }
 }
 
-class SubRouterPage2Data {
+class SubRouterPage2Data extends ChangeNotifier{
   String name = "Init Text";
 }
 
@@ -160,15 +160,6 @@ class _SubRouterPage3State extends State<SubRouterPage3> {
         color: Colors.grey,
         child: Column(
           children: [
-            Text(widget.data?.name ?? ""),
-            FlatButton(
-              child: Text("set net text"),
-              onPressed: () {
-                setState(() {
-                  widget.data?.name = "new Text";
-                });
-              },
-            ),
           ],
         ),
       ),
