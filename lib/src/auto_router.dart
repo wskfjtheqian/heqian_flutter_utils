@@ -313,7 +313,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
   @override
   RouteInformation restoreRouteInformation(List<AppRouterData> configuration) {
     var last = configuration.last;
-    var uri = Uri(path: last.path, queryParameters: last.params);
+    var uri = Uri(path: last?.path ?? "", queryParameters: last.params);
     return RouteInformation(location: uri.toString());
   }
 
@@ -381,8 +381,8 @@ class AppRouterDelegate extends _BaseRouterDelegate
   void pop<T extends Object>(T result) {
     if (_historyList.isNotEmpty) {
       _historyList.last.result.complete(result);
-      _historyList.removeLast();
       _historyList.last._data?.dispose();
+      _historyList.removeLast();
     }
     notifyListeners();
   }
