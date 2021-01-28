@@ -9,7 +9,8 @@ typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child,
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 
-mixin RouterDataWidget<T extends ChangeNotifier> on Widget {
+// ignore: must_be_immutable
+abstract class RouterDataWidget<T extends ChangeNotifier> implements Widget {
   T _data;
 
   T initData(BuildContext context);
@@ -17,7 +18,7 @@ mixin RouterDataWidget<T extends ChangeNotifier> on Widget {
   T get data => _data;
 }
 
-mixin RouterDataListener<T extends StatefulWidget> implements State<T> {
+abstract class RouterDataListener<T extends StatefulWidget> implements State<T> {
   @override
   void initState() {
     if (widget is RouterDataWidget) {
@@ -44,17 +45,24 @@ mixin RouterDataListener<T extends StatefulWidget> implements State<T> {
 
   @override
   void didUpdateWidget(covariant T oldWidget) {
+    Listenable data;
+    Listenable oldData;
     if (oldWidget is RouterDataWidget) {
-      var data = (oldWidget as RouterDataWidget).data;
-      if (null != data && data is Listenable) {
-        data.removeListener(_onChangeNotifier);
+      var temp = (oldWidget as RouterDataWidget).data;
+      if (null != temp && data is Listenable) {
+        oldData = temp;
       }
     }
+
     if (widget is RouterDataWidget) {
-      var data = (widget as RouterDataWidget).data;
-      if (null != data && data is Listenable) {
-        data.addListener(_onChangeNotifier);
+      var temp = (widget as RouterDataWidget).data;
+      if (null != temp && data is Listenable) {
+        data = temp;
       }
+    }
+    if (data != oldData) {
+      data?.addListener(_onChangeNotifier);
+      oldData?.removeListener(_onChangeNotifier);
     }
   }
 }
