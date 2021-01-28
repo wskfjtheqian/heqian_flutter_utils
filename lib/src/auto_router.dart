@@ -9,7 +9,6 @@ typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child,
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 
-// ignore: must_be_immutable
 abstract class RouterDataWidget<T extends ChangeNotifier> implements Widget {
   T _data;
 
@@ -18,7 +17,7 @@ abstract class RouterDataWidget<T extends ChangeNotifier> implements Widget {
   T get data => _data;
 }
 
-abstract class RouterDataListener<T extends StatefulWidget> implements State<T> {
+abstract class RouterDataListener<T extends StatefulWidget> extends State<T> {
   @override
   void initState() {
     if (widget is RouterDataWidget) {
