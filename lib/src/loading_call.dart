@@ -15,7 +15,8 @@ class LoadingCall extends StatefulWidget {
     this.emptyBuilder,
     this.errorBuilder,
     this.initBuilder,
-  })  : assert(null != builder),
+  })
+      : assert(null != builder),
         super(key: key);
 
   @override
@@ -103,10 +104,14 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   }
 
   @override
-  set error(dynamic value) {
-    setState(() {
-      _error = value;
-    });
+  showError(dynamic value, bool isShow) {
+    if (!isShow) {
+      setState(() {
+        _error = value;
+      });
+    } else {
+      super.showError(value, isShow);
+    }
   }
 }
 
@@ -128,12 +133,12 @@ abstract class _Call {
 
   dynamic get error => _error;
 
-  set error(dynamic value) {
+  showError(dynamic value, bool isShow) {
     _error = value;
     showToast(_context, "$value");
   }
 
-  Future<T> call<T>(LoadingStateCall call, {bool isShowError = false, Duration duration = const Duration(milliseconds: 500)}) async {
+  Future<T> call<T>(LoadingStateCall call, {bool isShowError = true, Duration duration = const Duration(milliseconds: 500)}) async {
     var _loadingController = showLoading(_context, msg: _text);
     try {
       _error = null;
@@ -142,8 +147,8 @@ abstract class _Call {
       }
       return await Future.wait([call(this), Future.delayed(duration)]).then((value) => value[0]);
     } catch (e) {
-      if (isShowError) {
-        error = e;
+      if (null != isShowError) {
+        showError(e, isShowError);
       }
       rethrow;
     } finally {
