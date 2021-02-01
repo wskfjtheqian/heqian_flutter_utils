@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
+typedef OnLoadingCallError = Future<bool> Function(dynamic error);
+
 class LoadingCall extends StatefulWidget {
   final WidgetBuilder builder;
   final WidgetBuilder emptyBuilder;
   final WidgetBuilder initBuilder;
   final Future<bool> Function(BuildContext context) onInitLoading;
   final Widget Function(BuildContext context, dynamic error) errorBuilder;
+  final OnLoadingCallError onError;
 
   const LoadingCall({
     Key key,
     this.builder,
     this.onInitLoading,
+    this.onError,
     this.emptyBuilder,
     this.errorBuilder,
     this.initBuilder,
-  })
-      : assert(null != builder),
+  })  : assert(null != builder),
         super(key: key);
 
   @override
@@ -50,6 +53,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
     super.initState();
     _context = context;
     _isInit = widget.initBuilder == null;
+    _onError = widget.onError;
     if (null != widget.onInitLoading) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
         try {
@@ -61,6 +65,13 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
         }
       });
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant LoadingCall oldWidget) {
+    _isInit = oldWidget.initBuilder == null;
+    _onError = oldWidget.onError;
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
@@ -133,6 +144,12 @@ abstract class _Call {
 
   dynamic get error => _error;
 
+  OnLoadingCallError _onError;
+
+  OnLoadingCallError get onError {
+    return _onError ?? _context.findAncestorWidgetOfExactType<LoadingCall>()?.onError;
+  }
+
   showError(dynamic value, bool isShow) {
     _error = value;
     showToast(_context, "$value");
@@ -147,8 +164,10 @@ abstract class _Call {
       }
       return await Future.wait([call(this), Future.delayed(duration)]).then((value) => value[0]);
     } catch (e) {
-      if (null != isShowError) {
-        showError(e, isShowError);
+      if (onError?.call(e) ?? true) {
+        if (null != isShowError) {
+          showError(e, isShowError);
+        }
       }
       rethrow;
     } finally {
