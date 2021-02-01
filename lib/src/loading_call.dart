@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
-typedef OnLoadingCallError = Future<bool> Function(dynamic error);
+typedef OnLoadingCallError = Future<bool> Function(BuildContext context, dynamic error);
 
 class LoadingCall extends StatefulWidget {
   final WidgetBuilder builder;
@@ -164,7 +164,7 @@ abstract class _Call {
       }
       return await Future.wait([call(this), Future.delayed(duration)]).then((value) => value[0]);
     } catch (e) {
-      if (onError?.call(e) ?? true) {
+      if (onError?.call(_context, e) ?? true) {
         if (null != isShowError) {
           showError(e, isShowError);
         }
