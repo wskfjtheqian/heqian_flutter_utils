@@ -3,7 +3,7 @@ import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
 bool checkRouter(AppRouterData route, [String path = "/routerPage/"]) => route?.path?.startsWith(path) ?? false;
 
-class PageMultilevelRouter extends StatefulWidget with RouterDataWidget {
+class PageMultilevelRouter extends RouterDataWidget {
   @override
   _PageMultilevelRouterState createState() => _PageMultilevelRouterState();
 
@@ -65,7 +65,7 @@ class _PageMultilevelRouterState extends State<PageMultilevelRouter> {
   }
 }
 
-class SubRouterPage1 extends StatefulWidget with RouterDataWidget {
+class SubRouterPage1 extends  RouterDataWidget {
   @override
   _SubRouterPage1State createState() => _SubRouterPage1State();
 
@@ -96,7 +96,7 @@ class SubRouterPage2Data extends ChangeNotifier{
   String name = "Init Text";
 }
 
-class SubRouterPage2 extends StatefulWidget with RouterDataWidget<SubRouterPage2Data> {
+class SubRouterPage2 extends  RouterDataWidget<SubRouterPage2Data> {
   @override
   _SubRouterPage2State createState() => _SubRouterPage2State();
 
@@ -137,7 +137,7 @@ class _SubRouterPage2State extends State<SubRouterPage2> {
 }
 
 
-class SubRouterPage3 extends StatefulWidget with RouterDataWidget {
+class SubRouterPage3 extends  RouterDataWidget {
   @override
   _SubRouterPage3State createState() => _SubRouterPage3State();
 
