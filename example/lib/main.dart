@@ -63,7 +63,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget with RouterDataWidget {
+class MyHomePage extends  RouterDataWidget {
   @override
   _MyHomePageState createState() => _MyHomePageState();
 
@@ -127,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class ToastPage extends StatefulWidget with RouterDataWidget {
+class ToastPage extends RouterDataWidget {
   @override
   _ToastPageState createState() => _ToastPageState();
 

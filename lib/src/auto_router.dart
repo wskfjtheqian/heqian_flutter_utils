@@ -9,8 +9,11 @@ typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child,
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 
-abstract class RouterDataWidget<T extends ChangeNotifier> implements Widget {
+// ignore: must_be_immutable
+abstract class RouterDataWidget<T extends ChangeNotifier> extends StatefulWidget {
   T _data;
+
+  RouterDataWidget({Key key}) : super(key: key);
 
   T initData(BuildContext context);
 
@@ -22,15 +25,15 @@ abstract class RouterDataWidget<T extends ChangeNotifier> implements Widget {
 
 }
 
-abstract class RouterDataListener<T extends StatefulWidget> extends State<T> {
+abstract class RouterDataListener<T extends RouterDataWidget> extends State<T> {
+  get data {
+    return widget.data;
+  }
+
   @override
   void initState() {
-    if (widget is RouterDataWidget) {
-      var data = (widget as RouterDataWidget).data;
-      if (null != data && data is Listenable) {
-        data.addListener(_onChangeNotifier);
-      }
-    }
+    data?.addListener(_onChangeNotifier);
+    super.initState();
   }
 
   void _onChangeNotifier() {
@@ -39,35 +42,15 @@ abstract class RouterDataListener<T extends StatefulWidget> extends State<T> {
 
   @override
   void dispose() {
-    if (widget is RouterDataWidget) {
-      var data = (widget as RouterDataWidget).data;
-      if (null != data && data is Listenable) {
-        data.removeListener(_onChangeNotifier);
-      }
-    }
+    data?.removeListener(_onChangeNotifier);
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(covariant T oldWidget) {
-    Listenable data;
-    Listenable oldData;
-    if (oldWidget is RouterDataWidget) {
-      var temp = (oldWidget as RouterDataWidget).data;
-      if (null != temp && data is Listenable) {
-        oldData = temp;
-      }
-    }
-
-    if (widget is RouterDataWidget) {
-      var temp = (widget as RouterDataWidget).data;
-      if (null != temp && data is Listenable) {
-        data = temp;
-      }
-    }
-    if (data != oldData) {
-      data?.addListener(_onChangeNotifier);
-      oldData?.removeListener(_onChangeNotifier);
-    }
+    data?.addListener(_onChangeNotifier);
+    oldWidget.data?.removeListener(_onChangeNotifier);
+    super.didUpdateWidget(oldWidget);
   }
 }
 
@@ -78,16 +61,20 @@ class AppRouterData {
   AppRouterData({this.path, this.params});
 }
 
-// ignore: must_be_immutable
-class _DefualtWidget extends StatelessWidget with RouterDataWidget {
+class _DefualtWidget extends RouterDataWidget {
+  @override
+  __DefualtWidgetState createState() => __DefualtWidgetState();
+
+  @override
+  ChangeNotifier initData(BuildContext context) {
+    return null;
+  }
+}
+
+class __DefualtWidgetState extends State<_DefualtWidget> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(color: Color(0xffffffff));
-  }
-
-  @override
-  initData(BuildContext context) {
-    return null;
   }
 }
 
