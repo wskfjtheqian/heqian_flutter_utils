@@ -15,6 +15,11 @@ abstract class RouterDataWidget<T extends ChangeNotifier> implements Widget {
   T initData(BuildContext context);
 
   T get data => _data;
+
+  set data(T value) {
+    _data = value;
+  }
+
 }
 
 abstract class RouterDataListener<T extends StatefulWidget> extends State<T> {
@@ -183,7 +188,8 @@ class SubRouter extends StatefulWidget {
     this.checkRouter,
     this.prefixPath,
     this.backgroundBuilder,
-  })  : assert(null != checkRouter || 0 != (prefixPath.length ?? 0)),
+  })
+      : assert(null != checkRouter || 0 != (prefixPath.length ?? 0)),
         super(key: key);
 
   @override
@@ -426,7 +432,8 @@ class AutoRouter extends SubRouter {
     this.home,
     this.pageBuilder,
     WidgetBuilder backgroundBuilder,
-  })  : assert(null != builder),
+  })
+      : assert(null != builder),
         assert(null != routers),
         assert(null != pageBuilder),
         super(key: key, prefixPath: home, backgroundBuilder: backgroundBuilder);
@@ -468,18 +475,16 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
     return widget.builder?.call(context, _delegate);
   }
 
-  Future<T> pushNamed<T extends Object>(
-    String name, {
+  Future<T> pushNamed<T extends Object>(String name, {
     Map<String, dynamic> params,
   }) {
     return _delegate.pushNamed(name, params);
   }
 
-  Future<T> pushNamedAndRemoveUntil<T extends Object>(
-    String path,
-    AutoRoutePredicate predicate, {
-    Map<String, dynamic> arguments,
-  }) {
+  Future<T> pushNamedAndRemoveUntil<T extends Object>(String path,
+      AutoRoutePredicate predicate, {
+        Map<String, dynamic> arguments,
+      }) {
     return _delegate.pushNamedAndRemoveUntil(path, predicate, arguments);
   }
 

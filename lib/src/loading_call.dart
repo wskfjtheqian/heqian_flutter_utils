@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
-typedef OnLoadingCallError = Future<bool> Function(BuildContext context, dynamic error);
+typedef OnLoadingCallError = Future<dynamic> Function(BuildContext context, dynamic error);
 
 class LoadingCall extends StatefulWidget {
   final WidgetBuilder builder;
@@ -19,7 +19,8 @@ class LoadingCall extends StatefulWidget {
     this.emptyBuilder,
     this.errorBuilder,
     this.initBuilder,
-  })  : assert(null != builder),
+  })
+      : assert(null != builder),
         super(key: key);
 
   @override
@@ -34,6 +35,7 @@ class LoadingCall extends StatefulWidget {
         state = context.findAncestorStateOfType<LoadingStatusState>();
       }
       if (null != state) {
+        state._context = context;
         return state;
       }
     }
@@ -51,14 +53,16 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   @override
   void initState() {
     super.initState();
-    _context = context;
     _isInit = widget.initBuilder == null;
     _onError = widget.onError;
     if (null != widget.onInitLoading) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
         try {
           _isEmpty = false == await widget.onInitLoading(context);
-        } catch (e) {} finally {
+        } catch (e) {
+          _error = e;
+          rethrow;
+        } finally {
           setState(() {
             _isInit = true;
           });
@@ -69,7 +73,6 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
 
   @override
   void didUpdateWidget(covariant LoadingCall oldWidget) {
-    _isInit = oldWidget.initBuilder == null;
     _onError = oldWidget.onError;
     super.didUpdateWidget(oldWidget);
   }
@@ -126,7 +129,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   }
 }
 
-typedef LoadingStateCall<T> = Future<T> Function(_Call state);
+typedef LoadingStateCall<T> = Future<T> Function(_Call state, LoadingController controller);
 
 abstract class _Call {
   String _text;
@@ -147,11 +150,12 @@ abstract class _Call {
   OnLoadingCallError _onError;
 
   OnLoadingCallError get onError {
-    return _onError ?? _context.findAncestorWidgetOfExactType<LoadingCall>()?.onError;
+    return _onError ?? _context
+        .findAncestorWidgetOfExactType<LoadingCall>()
+        ?.onError;
   }
 
   showError(dynamic value, bool isShow) {
-    _error = value;
     showToast(_context, "$value");
   }
 
@@ -160,13 +164,14 @@ abstract class _Call {
     try {
       _error = null;
       if (null == duration) {
-        return call(this);
+        return call(this, _loadingController);
       }
-      return await Future.wait([call(this), Future.delayed(duration)]).then((value) => value[0]);
+      return await Future.wait([call(this, _loadingController), Future.delayed(duration)]).then((value) => value[0]);
     } catch (e) {
-      if (onError?.call(_context, e) ?? true) {
+      var error = null != onError ? (await onError?.call(_context, e)) : e;
+      if (null != error) {
         if (null != isShowError) {
-          showError(e, isShowError);
+          showError(error, isShowError);
         }
       }
       rethrow;

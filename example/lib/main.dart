@@ -105,7 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           TextButton(
             onPressed: () {
-              LoadingCall.of(context).call((state) => Future.value());
+              LoadingCall.of(context).call((state,loadingController) => Future.value());
             },
             child: Text("LoadingCall"),
           ),

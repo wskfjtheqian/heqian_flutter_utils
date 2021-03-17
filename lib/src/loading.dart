@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 
 class LoadingController extends ChangeNotifier {
   Function() _onRemove;
+  Function() _onAdd;
+
+  void open() {
+    _onAdd?.call();
+  }
 
   void close() {
     _onRemove?.call();
@@ -49,8 +54,7 @@ class _LoadingBodyState extends State<Loading> {
   }
 }
 
-LoadingController showLoading(
-  BuildContext context, {
+LoadingController showLoading(BuildContext context, {
   String msg,
   TextStyle textStyle,
   Alignment alignment,
@@ -59,35 +63,40 @@ LoadingController showLoading(
   Radius radius,
   LoadingController controller,
   Widget Function(BuildContext context) indicatorBuilder,
-  bool rootOverlay = true,
 }) {
   controller ??= LoadingController();
-  OverlayEntry overlay;
   var theme = LoadingTheme.of(context);
-  overlay = OverlayEntry(builder: (context) {
-    return LoadingTheme(
-      data: theme,
-      child: _LoadingBody(
-        msg: msg,
-        onRemove: overlay.remove,
-        textStyle: textStyle,
-        alignment: alignment,
-        padding: padding,
-        color: color,
-        radius: radius,
-        toastController: controller,
-        indicatorBuilder: indicatorBuilder,
-      ),
-    );
-  });
-
   OverlayState overlayState;
   if (context is StatefulElement && context.state is OverlayState) {
     overlayState = context.state as OverlayState;
   } else {
     overlayState = context.findRootAncestorStateOfType<OverlayState>();
   }
-  overlayState.insert(overlay);
+
+  controller._onAdd = () {
+    OverlayEntry overlay;
+    overlay = OverlayEntry(builder: (context) {
+      return LoadingTheme(
+        data: theme,
+        child: _LoadingBody(
+          msg: msg,
+          onRemove: () {
+            overlay?.remove();
+            overlay = null;
+          },
+          textStyle: textStyle,
+          alignment: alignment,
+          padding: padding,
+          color: color,
+          radius: radius,
+          loadingController: controller,
+          indicatorBuilder: indicatorBuilder,
+        ),
+      );
+    });
+    overlayState.insert(overlay);
+  };
+  controller._onAdd();
   return controller;
 }
 
@@ -137,16 +146,16 @@ class LoadingThemeData {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is LoadingThemeData &&
-          runtimeType == other.runtimeType &&
-          duration == other.duration &&
-          textStyle == other.textStyle &&
-          alignment == other.alignment &&
-          padding == other.padding &&
-          color == other.color &&
-          colorMask == other.colorMask &&
-          radius == other.radius &&
-          indicatorBuilder == other.indicatorBuilder;
+          other is LoadingThemeData &&
+              runtimeType == other.runtimeType &&
+              duration == other.duration &&
+              textStyle == other.textStyle &&
+              alignment == other.alignment &&
+              padding == other.padding &&
+              color == other.color &&
+              colorMask == other.colorMask &&
+              radius == other.radius &&
+              indicatorBuilder == other.indicatorBuilder;
 
   @override
   int get hashCode =>
@@ -200,7 +209,7 @@ class _LoadingBody extends StatefulWidget {
   final EdgeInsets padding;
   final Color color;
   final Radius radius;
-  final LoadingController toastController;
+  final LoadingController loadingController;
   final Widget Function(BuildContext context) indicatorBuilder;
   final Color colorMask;
 
@@ -214,7 +223,7 @@ class _LoadingBody extends StatefulWidget {
     this.color,
     this.colorMask = const Color(0x30000000),
     this.radius,
-    this.toastController,
+    this.loadingController,
     this.indicatorBuilder,
   }) : super(key: key);
 
@@ -232,17 +241,23 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
     _controller.addListener(_onListener);
     _controller.forward();
     super.initState();
-    widget.toastController?._onRemove = _onRemove;
+    widget.loadingController?._onRemove = _onRemove;
+  }
+
+  @override
+  void didUpdateWidget(_LoadingBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    widget.loadingController?._onRemove = _onRemove;
   }
 
   _onRemove() {
     _controller?.reverse();
-    widget?.onRemove();
+    widget.onRemove?.call();
   }
 
   @override
   void dispose() {
-    widget.toastController?._onRemove = null;
+    widget.loadingController?._onRemove = null;
     _controller.removeListener(_onListener);
     _controller.removeStatusListener(_onStatusListener);
     _controller.dispose();
