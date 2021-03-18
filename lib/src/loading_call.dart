@@ -63,9 +63,11 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
           _error = e;
           rethrow;
         } finally {
-          setState(() {
-            _isInit = true;
-          });
+          if(mounted){
+            setState(() {
+              _isInit = true;
+            });
+          }
         }
       });
     }
