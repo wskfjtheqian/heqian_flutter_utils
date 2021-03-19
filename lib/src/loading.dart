@@ -1,19 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class LoadingController extends ChangeNotifier {
-  Function() _onRemove;
-  Function() _onAdd;
-
-  void open() {
-    _onAdd?.call();
-  }
-
-  void close() {
-    _onRemove?.call();
-  }
-}
-
 class Loading extends StatefulWidget {
   final LoadingThemeData data;
 
@@ -52,52 +39,6 @@ class _LoadingBodyState extends State<Loading> {
       child: child,
     );
   }
-}
-
-LoadingController showLoading(BuildContext context, {
-  String msg,
-  TextStyle textStyle,
-  Alignment alignment,
-  EdgeInsets padding,
-  Color color,
-  Radius radius,
-  LoadingController controller,
-  Widget Function(BuildContext context) indicatorBuilder,
-}) {
-  controller ??= LoadingController();
-  var theme = LoadingTheme.of(context);
-  OverlayState overlayState;
-  if (context is StatefulElement && context.state is OverlayState) {
-    overlayState = context.state as OverlayState;
-  } else {
-    overlayState = context.findRootAncestorStateOfType<OverlayState>();
-  }
-
-  controller._onAdd = () {
-    OverlayEntry overlay;
-    overlay = OverlayEntry(builder: (context) {
-      return LoadingTheme(
-        data: theme,
-        child: _LoadingBody(
-          msg: msg,
-          onRemove: () {
-            overlay?.remove();
-            overlay = null;
-          },
-          textStyle: textStyle,
-          alignment: alignment,
-          padding: padding,
-          color: color,
-          radius: radius,
-          loadingController: controller,
-          indicatorBuilder: indicatorBuilder,
-        ),
-      );
-    });
-    overlayState.insert(overlay);
-  };
-  controller._onAdd();
-  return controller;
 }
 
 class LoadingThemeData {
@@ -201,9 +142,66 @@ class LoadingTheme extends InheritedTheme {
   }) : super(key: key, child: child);
 }
 
+class LoadingController extends ChangeNotifier {
+  OverlayEntry _overlay;
+
+  bool _isShow = false;
+  Function() _onAdd;
+
+  void open() {
+    _onAdd?.call();
+  }
+
+  void close() {
+    _isShow = false;
+    notifyListeners();
+  }
+}
+
+LoadingController showLoading(BuildContext context, {
+  String msg,
+  TextStyle textStyle,
+  Alignment alignment,
+  EdgeInsets padding,
+  Color color,
+  Radius radius,
+  LoadingController controller,
+  Widget Function(BuildContext context) indicatorBuilder,
+}) {
+  controller ??= LoadingController();
+  var theme = LoadingTheme.of(context);
+  OverlayState overlayState;
+  if (context is StatefulElement && context.state is OverlayState) {
+    overlayState = context.state as OverlayState;
+  } else {
+    overlayState = context.findRootAncestorStateOfType<OverlayState>();
+  }
+
+  controller._onAdd = () {
+    controller._overlay = OverlayEntry(builder: (context) {
+      return LoadingTheme(
+        data: theme,
+        child: _LoadingBody(
+          msg: msg,
+          textStyle: textStyle,
+          alignment: alignment,
+          padding: padding,
+          color: color,
+          radius: radius,
+          loadingController: controller,
+          indicatorBuilder: indicatorBuilder,
+        ),
+      );
+    });
+    controller._isShow = true;
+    overlayState.insert(controller._overlay);
+  };
+  controller._onAdd();
+  return controller;
+}
+
 class _LoadingBody extends StatefulWidget {
   final String msg;
-  final VoidCallback onRemove;
   final TextStyle textStyle;
   final Alignment alignment;
   final EdgeInsets padding;
@@ -216,7 +214,6 @@ class _LoadingBody extends StatefulWidget {
   const _LoadingBody({
     Key key,
     this.msg,
-    this.onRemove,
     this.textStyle,
     this.alignment,
     this.padding,
@@ -239,25 +236,20 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
     _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     _controller.addStatusListener(_onStatusListener);
     _controller.addListener(_onListener);
-    _controller.forward();
+    widget.loadingController.addListener(_onLoadingListener);
+
+    if (widget.loadingController._isShow) {
+      _controller.forward();
+    } else {
+      widget.loadingController._overlay?.remove();
+      widget.loadingController._overlay = null;
+    }
     super.initState();
-    widget.loadingController?._onRemove = _onRemove;
-  }
-
-  @override
-  void didUpdateWidget(_LoadingBody oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    widget.loadingController?._onRemove = _onRemove;
-  }
-
-  _onRemove() {
-    _controller?.reverse();
-    widget.onRemove?.call();
   }
 
   @override
   void dispose() {
-    widget.loadingController?._onRemove = null;
+    widget.loadingController.removeListener(_onLoadingListener);
     _controller.removeListener(_onListener);
     _controller.removeStatusListener(_onStatusListener);
     _controller.dispose();
@@ -318,11 +310,18 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
 
   void _onStatusListener(AnimationStatus status) {
     if (AnimationStatus.dismissed == status) {
-      widget.onRemove?.call();
+      widget.loadingController._overlay?.remove();
+      widget.loadingController._overlay = null;
     }
   }
 
   void _onListener() {
     setState(() {});
+  }
+
+  void _onLoadingListener() {
+    if (!widget.loadingController._isShow) {
+      _controller.reverse();
+    }
   }
 }
