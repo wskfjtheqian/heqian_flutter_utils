@@ -63,7 +63,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
           _error = e;
           rethrow;
         } finally {
-          if(mounted){
+          if (mounted) {
             setState(() {
               _isInit = true;
             });
@@ -129,6 +129,12 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
       super.showError(value, isShow);
     }
   }
+
+  @override
+  BuildContext getContext() {
+    return context;
+  }
+
 }
 
 typedef LoadingStateCall<T> = Future<T> Function(_Call state, LoadingController controller);
@@ -143,6 +149,8 @@ abstract class _Call {
 
   bool get isEmpty => _isEmpty;
 
+  BuildContext getContext() => _context;
+
   set isEmpty(bool value) {
     _isEmpty = value;
   }
@@ -152,7 +160,7 @@ abstract class _Call {
   OnLoadingCallError _onError;
 
   OnLoadingCallError get onError {
-    return _onError ?? _context
+    return _onError ?? getContext()
         .findAncestorWidgetOfExactType<LoadingCall>()
         ?.onError;
   }
