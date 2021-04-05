@@ -60,7 +60,6 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
         try {
           _isEmpty = false == await widget.onInitLoading(context);
         } catch (e) {
-          _error = e;
           rethrow;
         } finally {
           if (mounted) {
