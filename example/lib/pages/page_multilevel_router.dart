@@ -27,7 +27,7 @@ class _PageMultilevelRouterState extends State<PageMultilevelRouter> {
                 FlatButton(
                   child: Text("Route1"),
                   onPressed: () {
-                    AutoRouter.of(context).pushNamedAndRemoveUntil("/routerPage/subRouter1", (route) => checkRouter(route),arguments: {"id":"12"});
+                    AutoRouter.of(context).pushNamedAndRemoveUntil("/routerPage/subRouter1", (route) => checkRouter(route), arguments: {"id": "12"});
                   },
                 ),
                 FlatButton(
@@ -65,7 +65,7 @@ class _PageMultilevelRouterState extends State<PageMultilevelRouter> {
   }
 }
 
-class SubRouterPage1 extends  RouterDataWidget {
+class SubRouterPage1 extends RouterDataWidget {
   @override
   _SubRouterPage1State createState() => _SubRouterPage1State();
 
@@ -76,27 +76,41 @@ class SubRouterPage1 extends  RouterDataWidget {
 class _SubRouterPage1State extends State<SubRouterPage1> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.blue,
-      child: Column(
-        children: [
-          Text("这是三级路由"),
-          Expanded(
-            child: SubRouter(
-              prefixPath: "/routerPage/subRouter1/",
+    return Scaffold(
+      appBar: isSubRouter(context)
+          ? null
+          : AppBar(
+        title: Text("这是二级路由"),
+      ),
+      body: Container(
+        color: Colors.blue,
+        width: double.infinity,
+        child: Column(
+          children: [
+            GestureDetector(
+              child: Text("这是二级路由"),
+              onTap: () {
+                AutoRouter.of(context).pop();
+              },
             ),
-          ),
-        ],
+            if (750 < MediaQuery.of(context).size.width)
+              Expanded(
+                child: SubRouter(
+                  prefixPath: "/routerPage/subRouter1/",
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class SubRouterPage2Data extends ChangeNotifier{
+class SubRouterPage2Data extends ChangeNotifier {
   String name = "Init Text";
 }
 
-class SubRouterPage2 extends  RouterDataWidget<SubRouterPage2Data> {
+class SubRouterPage2 extends RouterDataWidget<SubRouterPage2Data> {
   @override
   _SubRouterPage2State createState() => _SubRouterPage2State();
 
@@ -136,14 +150,12 @@ class _SubRouterPage2State extends State<SubRouterPage2> {
   }
 }
 
-
-class SubRouterPage3 extends  RouterDataWidget {
+class SubRouterPage3 extends RouterDataWidget {
   @override
   _SubRouterPage3State createState() => _SubRouterPage3State();
 
   @override
-   initData(BuildContext context) {
-  }
+  initData(BuildContext context) {}
 }
 
 class _SubRouterPage3State extends State<SubRouterPage3> {
@@ -153,18 +165,22 @@ class _SubRouterPage3State extends State<SubRouterPage3> {
       appBar: isSubRouter(context)
           ? null
           : AppBar(
-        title: Text("三级页面"),
-      ),
+              title: Text("三级页面"),
+            ),
       body: Container(
         width: double.infinity,
         color: Colors.grey,
         child: Column(
           children: [
+            GestureDetector(
+              child: Text("三级页面"),
+              onTap: () {
+                AutoRouter.of(context).pop();
+              },
+            )
           ],
         ),
       ),
     );
   }
 }
-
-
