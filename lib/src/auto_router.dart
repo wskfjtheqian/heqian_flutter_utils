@@ -368,13 +368,14 @@ class AppRouterDelegate extends _BaseRouterDelegate
     if (configuration.isNotEmpty) {
       for (var item in configuration) {
         this._historyList.add(_HistoryRouter(item, _routers[item.path]));
-        notifyListeners();
-        var completer = Completer();
-        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-          completer.complete();
-        });
-        await completer.future.timeout(Duration(seconds: 2), onTimeout: () => null);
+
+        // var completer = Completer();
+        // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        //   completer.complete();
+        // });
+        // await completer.future.timeout(Duration(seconds: 2), onTimeout: () => null);
       }
+      notifyListeners();
       return this._historyList.last;
     }
     return null;
