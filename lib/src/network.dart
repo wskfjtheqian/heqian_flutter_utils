@@ -30,6 +30,9 @@ class _NetworkState extends State<Network> {
   void initState() {
     super.initState();
     _interfaces = widget.create(context);
+    _interfaces?.forEach((element) {
+      element.__networkState = this;
+    });
   }
 
   @override
@@ -56,6 +59,10 @@ class _NetworkState extends State<Network> {
 
 abstract class NetwordInterface<E> {
   final List<E> interfaces;
+
+  _NetworkState __networkState;
+
+  _NetworkState get networkState => __networkState;
 
   NetwordInterface(this.interfaces) : assert(null != interfaces);
 
