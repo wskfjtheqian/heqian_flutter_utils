@@ -19,14 +19,13 @@ class LoadingCall extends StatefulWidget {
     this.emptyBuilder,
     this.errorBuilder,
     this.initBuilder,
-  })
-      : assert(null != builder),
+  })  : assert(null != builder),
         super(key: key);
 
   @override
   LoadingStatusState createState() => LoadingStatusState();
 
-  static _Call of(BuildContext context, {bool root = false, String text}) {
+  static _Call of(BuildContext context, {bool root = false, String Function(double value) text}) {
     if (!root) {
       LoadingStatusState state;
       if (context is StatefulElement && (context).state is LoadingStatusState) {
@@ -133,13 +132,12 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   BuildContext getContext() {
     return context;
   }
-
 }
 
 typedef LoadingStateCall<T> = Future<T> Function(_Call state, LoadingController controller);
 
 abstract class _Call {
-  String _text;
+  String Function(double value) _text;
   bool _isEmpty = false;
 
   dynamic _error;
@@ -159,9 +157,7 @@ abstract class _Call {
   OnLoadingCallError _onError;
 
   OnLoadingCallError get onError {
-    return _onError ?? getContext()
-        .findAncestorWidgetOfExactType<LoadingCall>()
-        ?.onError;
+    return _onError ?? getContext().findAncestorWidgetOfExactType<LoadingCall>()?.onError;
   }
 
   showError(dynamic value, bool isShow) {
@@ -191,7 +187,7 @@ abstract class _Call {
 }
 
 class _LoadingCall extends _Call {
-  _LoadingCall(BuildContext _context, String text) {
+  _LoadingCall(BuildContext _context, String Function(double value) text) {
     _text = text;
     this._context = _context;
   }

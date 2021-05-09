@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
 void main() {
-
   runApp(MyApp());
 }
 
@@ -49,7 +48,7 @@ class MyApp extends StatelessWidget {
             return MaterialApp.router(
               routerDelegate: appRouter,
               routeInformationParser: appRouter,
-              routeInformationProvider:appRouter.provider,
+              routeInformationProvider: appRouter.provider,
               title: 'Flutter Demo',
               theme: ThemeData(
                 fontFamily: "SourceHanSansCN",
@@ -64,7 +63,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends  RouterDataWidget {
+class MyHomePage extends RouterDataWidget {
   @override
   _MyHomePageState createState() => _MyHomePageState();
 
@@ -97,7 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           TextButton(
             onPressed: () {
-              var _loadingController = showLoading(context, msg: "Loading");
+              var _loadingController = showLoading(context, msg: (value) => "Loading");
               Timer(Duration(seconds: 5), () {
                 _loadingController.close();
               });
@@ -106,7 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           TextButton(
             onPressed: () {
-              LoadingCall.of(context).call((state,loadingController) => Future.value());
+              LoadingCall.of(context).call((state, loadingController) => Future.value());
             },
             child: Text("LoadingCall"),
           ),

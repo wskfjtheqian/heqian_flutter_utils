@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class Loading extends StatefulWidget {
@@ -49,7 +50,7 @@ class LoadingThemeData {
   final Color color;
   final Color colorMask;
   final Radius radius;
-  final Widget Function(BuildContext context) indicatorBuilder;
+  final Widget Function(BuildContext context, double value) indicatorBuilder;
 
   LoadingThemeData({
     this.duration,
@@ -87,16 +88,16 @@ class LoadingThemeData {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is LoadingThemeData &&
-              runtimeType == other.runtimeType &&
-              duration == other.duration &&
-              textStyle == other.textStyle &&
-              alignment == other.alignment &&
-              padding == other.padding &&
-              color == other.color &&
-              colorMask == other.colorMask &&
-              radius == other.radius &&
-              indicatorBuilder == other.indicatorBuilder;
+      other is LoadingThemeData &&
+          runtimeType == other.runtimeType &&
+          duration == other.duration &&
+          textStyle == other.textStyle &&
+          alignment == other.alignment &&
+          padding == other.padding &&
+          color == other.color &&
+          colorMask == other.colorMask &&
+          radius == other.radius &&
+          indicatorBuilder == other.indicatorBuilder;
 
   @override
   int get hashCode =>
@@ -144,6 +145,7 @@ class LoadingTheme extends InheritedTheme {
 
 class LoadingController extends ChangeNotifier {
   OverlayEntry _overlay;
+  ValueNotifier<double> _value = ValueNotifier<double>(null);
 
   bool _isShow = false;
   Function() _onAdd;
@@ -156,10 +158,18 @@ class LoadingController extends ChangeNotifier {
     _isShow = false;
     notifyListeners();
   }
+
+  @override
+  get value => _value;
+
+  void progress(int count, int total) {
+    _value.value = count / total;
+  }
 }
 
-LoadingController showLoading(BuildContext context, {
-  String msg,
+LoadingController showLoading(
+  BuildContext context, {
+  String Function(double value) msg,
   TextStyle textStyle,
   Alignment alignment,
   EdgeInsets padding,
@@ -201,7 +211,7 @@ LoadingController showLoading(BuildContext context, {
 }
 
 class _LoadingBody extends StatefulWidget {
-  final String msg;
+  final String Function(double value) msg;
   final TextStyle textStyle;
   final Alignment alignment;
   final EdgeInsets padding;
@@ -268,7 +278,6 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
     if (null != (widget.textStyle ?? theme?.textStyle)) {
       textStyle = (widget.textStyle ?? theme?.textStyle).merge(textStyle);
     }
-    Widget indicator = (widget.indicatorBuilder ?? theme?.indicatorBuilder)?.call(context);
 
     Widget child = Align(
       alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.2)),
@@ -280,19 +289,25 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
             borderRadius: BorderRadius.all(widget.radius ?? (theme?.radius ?? Radius.circular(8))),
           ),
           padding: widget.padding ?? (theme?.padding ?? EdgeInsets.all(16)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              indicator ?? CircularProgressIndicator(),
-              if (widget.msg?.isNotEmpty ?? false)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    widget.msg,
-                    style: textStyle,
-                  ),
-                ),
-            ],
+          child: ValueListenableBuilder<double>(
+            valueListenable: widget.loadingController.value,
+            builder: (context, value, child) {
+              var msg = widget.msg?.call(value);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  (widget.indicatorBuilder ?? theme?.indicatorBuilder)?.call(context, value) ?? CircularProgressIndicator(value: value),
+                  if (msg?.isNotEmpty ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        msg,
+                        style: textStyle,
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
