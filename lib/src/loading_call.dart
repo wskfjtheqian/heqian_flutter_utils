@@ -164,8 +164,8 @@ abstract class _Call {
     showToast(_context, "$value");
   }
 
-  Future<T> call<T>(LoadingStateCall call, {bool isShowError = true, Duration duration = const Duration(milliseconds: 500)}) async {
-    var _loadingController = showLoading(_context, msg: _text);
+  Future<T> call<T>(LoadingStateCall call, {bool isShowError = true, bool isShowLoading, Duration duration = const Duration(milliseconds: 500)}) async {
+    var _loadingController = isShowLoading ? showLoading(_context, msg: _text) : null;
     try {
       _error = null;
       if (null == duration) {
@@ -181,7 +181,7 @@ abstract class _Call {
       }
       rethrow;
     } finally {
-      _loadingController.close();
+      _loadingController?.close();
     }
   }
 }
