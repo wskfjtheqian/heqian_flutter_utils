@@ -143,12 +143,14 @@ class LoadingTheme extends InheritedTheme {
   }) : super(key: key, child: child);
 }
 
-class LoadingController extends ChangeNotifier {
+class LoadingController extends ValueNotifier<double> {
   OverlayEntry _overlay;
-  ValueNotifier<double> _value = ValueNotifier<double>(null);
 
   bool _isShow = false;
+
   Function() _onAdd;
+
+  LoadingController() : super(null);
 
   void open() {
     _onAdd?.call();
@@ -159,11 +161,8 @@ class LoadingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  get value => _value;
-
   void progress(int count, int total) {
-    _value.value = count / total;
+    value = count / total;
   }
 }
 
@@ -290,7 +289,7 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
           ),
           padding: widget.padding ?? (theme?.padding ?? EdgeInsets.all(16)),
           child: ValueListenableBuilder<double>(
-            valueListenable: widget.loadingController.value,
+            valueListenable: widget.loadingController,
             builder: (context, value, child) {
               var msg = widget.msg?.call(value);
               return Column(
