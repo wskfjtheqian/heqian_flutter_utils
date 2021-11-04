@@ -7,9 +7,10 @@ class PageMultilevelRouter extends RouterDataWidget {
   @override
   _PageMultilevelRouterState createState() => _PageMultilevelRouterState();
 
-  @override
-  initData(BuildContext context) {
 
+  @override
+  initData(BuildContext? context) {
+    throw UnimplementedError();
   }
 }
 
@@ -27,13 +28,13 @@ class _PageMultilevelRouterState extends State<PageMultilevelRouter> {
                 FlatButton(
                   child: Text("Route1"),
                   onPressed: () {
-                    AutoRouter.of(context).pushNamedAndRemoveUntil("/routerPage/subRouter1", (route) => checkRouter(route), arguments: {"id": "12"});
+                    // AutoRouter.of(context).pushNamedAndRemoveUntil("/routerPage/subRouter1", (route) => checkRouter(route), arguments: {"id": "12"});
                   },
                 ),
                 FlatButton(
                   child: Text("Route2"),
                   onPressed: () {
-                    AutoRouter.of(context).pushNamedAndRemoveUntil("/routerPage/subRouter2", (route) => checkRouter(route));
+                    // AutoRouter.of(context).pushNamedAndRemoveUntil("/routerPage/subRouter2", (route) => checkRouter(route));
                   },
                 ),
                 FlatButton(
@@ -69,8 +70,11 @@ class SubRouterPage1 extends RouterDataWidget {
   @override
   _SubRouterPage1State createState() => _SubRouterPage1State();
 
+
   @override
-  initData(BuildContext context) {}
+  initData(BuildContext? context) {
+    throw UnimplementedError();
+  }
 }
 
 class _SubRouterPage1State extends State<SubRouterPage1> {
@@ -114,9 +118,10 @@ class SubRouterPage2 extends RouterDataWidget<SubRouterPage2Data> {
   @override
   _SubRouterPage2State createState() => _SubRouterPage2State();
 
+
   @override
-  SubRouterPage2Data initData(BuildContext context) {
-    return SubRouterPage2Data();
+  initData(BuildContext? context) {
+    throw UnimplementedError();
   }
 }
 
@@ -155,7 +160,9 @@ class SubRouterPage3 extends RouterDataWidget {
   _SubRouterPage3State createState() => _SubRouterPage3State();
 
   @override
-  initData(BuildContext context) {}
+  initData(BuildContext? context) {
+    throw UnimplementedError();
+  }
 }
 
 class _SubRouterPage3State extends State<SubRouterPage3> {

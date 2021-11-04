@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
@@ -9,28 +6,25 @@ class Network extends StatefulWidget {
 
   final List<NetwordInterface> Function(BuildContext context) create;
 
-  const Network({Key key, this.builder, this.create})
-      : assert(null != builder),
-        assert(null != create),
-        super(key: key);
+  const Network({Key? key, required this.builder, required this.create}) : super(key: key);
 
   @override
   _NetworkState createState() => _NetworkState();
 
   static T of<T>(BuildContext context) {
-    _NetworkState formState = context.findAncestorStateOfType<_NetworkState>();
+    _NetworkState formState = context.findAncestorStateOfType<_NetworkState>()!;
     return formState.getInterfaces<T>();
   }
 }
 
 class _NetworkState extends State<Network> {
-  List<NetwordInterface> _interfaces;
+  late List<NetwordInterface> _interfaces;
 
   @override
   void initState() {
     super.initState();
     _interfaces = widget.create(context);
-    _interfaces?.forEach((element) {
+    _interfaces.forEach((element) {
       element.__networkState = this;
     });
   }
@@ -54,19 +48,20 @@ class _NetworkState extends State<Network> {
       }
     }
     assert(false, "Not find interfaces");
+    return null!;
   }
 }
 
 abstract class NetwordInterface<E> {
   final List<E> interfaces;
 
-  _NetworkState __networkState;
+  _NetworkState? __networkState;
 
-  _NetworkState get networkState => __networkState;
+  _NetworkState get networkState => __networkState!;
 
-  NetwordInterface(this.interfaces) : assert(null != interfaces);
+  NetwordInterface(this.interfaces);
 
-  T getInterfaces<T>() {
+  T? getInterfaces<T>() {
     for (var item in interfaces) {
       if (item is T) {
         return item;

@@ -2,15 +2,17 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+typedef IndicatorBuilder = Widget Function(BuildContext context, double value);
+
 class Loading extends StatefulWidget {
-  final LoadingThemeData data;
+  final LoadingThemeData? data;
 
   final Widget child;
 
   const Loading({
-    Key key,
+    Key? key,
     this.data,
-    this.child,
+    required this.child,
   }) : super(key: key);
 
   @override
@@ -32,7 +34,7 @@ class _LoadingBodyState extends State<Loading> {
     if (null != widget.data) {
       child = LoadingTheme(
         child: widget.child,
-        data: widget.data,
+        data: widget.data!,
       );
     }
     return Directionality(
@@ -42,15 +44,17 @@ class _LoadingBodyState extends State<Loading> {
   }
 }
 
+
+
 class LoadingThemeData {
-  final Duration duration;
-  final TextStyle textStyle;
-  final Alignment alignment;
-  final EdgeInsets padding;
-  final Color color;
-  final Color colorMask;
-  final Radius radius;
-  final Widget Function(BuildContext context, double value) indicatorBuilder;
+  final Duration? duration;
+  final TextStyle? textStyle;
+  final Alignment? alignment;
+  final EdgeInsets? padding;
+  final Color? color;
+  final Color? colorMask;
+  final Radius? radius;
+  final IndicatorBuilder? indicatorBuilder;
 
   LoadingThemeData({
     this.duration,
@@ -64,14 +68,14 @@ class LoadingThemeData {
   });
 
   LoadingThemeData copyWith({
-    final Duration duration,
-    final TextStyle textStyle,
-    final Alignment alignment,
-    final EdgeInsets padding,
-    final Color color,
-    final Color colorMask,
-    final Radius radius,
-    final Widget Function(BuildContext context) indicatorBuilder,
+    final Duration? duration,
+    final TextStyle? textStyle,
+    final Alignment? alignment,
+    final EdgeInsets? padding,
+    final Color? color,
+    final Color? colorMask,
+    final Radius? radius,
+    final IndicatorBuilder? indicatorBuilder,
   }) {
     return LoadingThemeData(
       duration: duration ?? this.duration,
@@ -112,16 +116,16 @@ class LoadingThemeData {
 }
 
 class LoadingTheme extends InheritedTheme {
-  final LoadingThemeData data;
+  final LoadingThemeData? data;
 
   const LoadingTheme({
-    Key key,
+    Key? key,
     this.data,
-    @required Widget child,
+    required Widget child,
   }) : super(key: key, child: child);
 
-  static LoadingThemeData of(BuildContext context) {
-    final LoadingTheme inheritedButtonTheme = context.dependOnInheritedWidgetOfExactType<LoadingTheme>();
+  static LoadingThemeData? of(BuildContext context) {
+    final LoadingTheme? inheritedButtonTheme = context.dependOnInheritedWidgetOfExactType<LoadingTheme>();
     return inheritedButtonTheme?.data;
   }
 
@@ -132,25 +136,25 @@ class LoadingTheme extends InheritedTheme {
 
   @override
   Widget wrap(BuildContext context, Widget child) {
-    final LoadingTheme ancestorTheme = context.findAncestorWidgetOfExactType<LoadingTheme>();
+    final LoadingTheme? ancestorTheme = context.findAncestorWidgetOfExactType<LoadingTheme>();
     return identical(this, ancestorTheme) ? child : LoadingTheme.fromLoadingThemeData(data: data, child: child);
   }
 
   const LoadingTheme.fromLoadingThemeData({
-    Key key,
+    Key? key,
     @required this.data,
-    Widget child,
+    required Widget child,
   }) : super(key: key, child: child);
 }
 
 class LoadingController extends ValueNotifier<double> {
-  OverlayEntry _overlay;
+  OverlayEntry? _overlay;
 
   bool _isShow = false;
 
-  Function() _onAdd;
+  Function()? _onAdd;
 
-  LoadingController() : super(null);
+  LoadingController() : super(0);
 
   void open() {
     _onAdd?.call();
@@ -168,18 +172,18 @@ class LoadingController extends ValueNotifier<double> {
 
 LoadingController showLoading(
   BuildContext context, {
-  String Function(double value) msg,
-  TextStyle textStyle,
-  Alignment alignment,
-  EdgeInsets padding,
-  Color color,
-  Radius radius,
-  LoadingController controller,
-  Widget Function(BuildContext context) indicatorBuilder,
+  String Function(double value)? msg,
+  TextStyle? textStyle,
+  Alignment? alignment,
+  EdgeInsets? padding,
+  Color? color,
+  Radius? radius,
+  LoadingController? controller,
+  Widget Function(BuildContext context)? indicatorBuilder,
 }) {
   controller ??= LoadingController();
   var theme = LoadingTheme.of(context);
-  OverlayState overlayState;
+  OverlayState? overlayState;
   if (context is StatefulElement && context.state is OverlayState) {
     overlayState = context.state as OverlayState;
   } else {
@@ -187,7 +191,7 @@ LoadingController showLoading(
   }
 
   controller._onAdd = () {
-    controller._overlay = OverlayEntry(builder: (context) {
+    controller!._overlay = OverlayEntry(builder: (context) {
       return LoadingTheme(
         data: theme,
         child: _LoadingBody(
@@ -197,31 +201,31 @@ LoadingController showLoading(
           padding: padding,
           color: color,
           radius: radius,
-          loadingController: controller,
+          loadingController: controller!,
           indicatorBuilder: indicatorBuilder,
         ),
       );
     });
     controller._isShow = true;
-    overlayState.insert(controller._overlay);
+    overlayState!.insert(controller._overlay!);
   };
-  controller._onAdd();
+  controller._onAdd!();
   return controller;
 }
 
 class _LoadingBody extends StatefulWidget {
-  final String Function(double value) msg;
-  final TextStyle textStyle;
-  final Alignment alignment;
-  final EdgeInsets padding;
-  final Color color;
-  final Radius radius;
+  final String Function(double value)? msg;
+  final TextStyle? textStyle;
+  final Alignment? alignment;
+  final EdgeInsets? padding;
+  final Color? color;
+  final Radius? radius;
   final LoadingController loadingController;
-  final Widget Function(BuildContext context) indicatorBuilder;
-  final Color colorMask;
+  final Widget Function(BuildContext context)? indicatorBuilder;
+  final Color? colorMask;
 
   const _LoadingBody({
-    Key key,
+    Key? key,
     this.msg,
     this.textStyle,
     this.alignment,
@@ -229,7 +233,7 @@ class _LoadingBody extends StatefulWidget {
     this.color,
     this.colorMask = const Color(0x30000000),
     this.radius,
-    this.loadingController,
+    required this.loadingController,
     this.indicatorBuilder,
   }) : super(key: key);
 
@@ -238,7 +242,7 @@ class _LoadingBody extends StatefulWidget {
 }
 
 class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateMixin {
-  AnimationController _controller;
+  late AnimationController _controller;
 
   @override
   void initState() {
@@ -267,7 +271,7 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    LoadingThemeData theme = LoadingTheme.of(context);
+    LoadingThemeData? theme = LoadingTheme.of(context);
     TextStyle textStyle = TextStyle(
       color: Color(0xFFFFFFFF),
       decoration: TextDecoration.none,
@@ -275,7 +279,7 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
       fontWeight: FontWeight.normal,
     );
     if (null != (widget.textStyle ?? theme?.textStyle)) {
-      textStyle = (widget.textStyle ?? theme?.textStyle).merge(textStyle);
+      textStyle = (widget.textStyle ?? theme?.textStyle)!.merge(textStyle);
     }
 
     Widget child = Align(
@@ -300,7 +304,7 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
-                        msg,
+                        msg!,
                         style: textStyle,
                       ),
                     ),

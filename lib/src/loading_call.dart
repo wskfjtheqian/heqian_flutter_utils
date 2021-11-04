@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
 typedef OnLoadingCallError = Future<dynamic> Function(BuildContext context, dynamic error);
 
 class LoadingCall extends StatefulWidget {
   final WidgetBuilder builder;
-  final WidgetBuilder emptyBuilder;
-  final WidgetBuilder initBuilder;
-  final Future<bool> Function(BuildContext context) onInitLoading;
-  final Widget Function(BuildContext context, dynamic error) errorBuilder;
-  final OnLoadingCallError onError;
+  final WidgetBuilder? emptyBuilder;
+  final WidgetBuilder? initBuilder;
+  final Future<bool> Function(BuildContext context)? onInitLoading;
+  final Widget Function(BuildContext context, dynamic error)? errorBuilder;
+  final OnLoadingCallError? onError;
 
   const LoadingCall({
-    Key key,
-    this.builder,
+    Key? key,
+    required this.builder,
     this.onInitLoading,
     this.onError,
     this.emptyBuilder,
     this.errorBuilder,
     this.initBuilder,
-  })  : assert(null != builder),
-        super(key: key);
+  }) : super(key: key);
 
   @override
   LoadingStatusState createState() => LoadingStatusState();
 
-  static _Call of(BuildContext context, {bool root = false, String Function(double value) text}) {
+  static _Call of(BuildContext context, {bool root = false, String Function(double value)? text}) {
     if (!root) {
-      LoadingStatusState state;
+      LoadingStatusState? state;
       if (context is StatefulElement && (context).state is LoadingStatusState) {
-        state = context.state;
+        state = context.state as LoadingStatusState?;
       } else {
         state = context.findAncestorStateOfType<LoadingStatusState>();
       }
@@ -55,9 +55,9 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
     _isInit = widget.initBuilder == null;
     _onError = widget.onError;
     if (null != widget.onInitLoading) {
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      WidgetsBinding.instance!.addPostFrameCallback((timeStamp) async {
         try {
-          _isEmpty = false == await widget.onInitLoading(context);
+          _isEmpty = false == await widget.onInitLoading!(context);
         } catch (e) {
           rethrow;
         } finally {
@@ -85,7 +85,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
     } else if (null != error) {
       child = (widget.errorBuilder ?? _buildError).call(context, error);
     } else if (false == _isInit) {
-      child = widget.initBuilder(context);
+      child = widget.initBuilder!(context);
     } else {
       child = widget.builder(context);
     }
@@ -134,15 +134,15 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   }
 }
 
-typedef LoadingStateCall<T> = Future<T> Function(_Call state, LoadingController controller);
+typedef LoadingStateCall<T> = Future<T> Function(_Call state, LoadingController? controller);
 
 abstract class _Call {
-  String Function(double value) _text;
+  String Function(double value)? _text;
   bool _isEmpty = false;
 
   dynamic _error;
 
-  BuildContext _context;
+  late BuildContext _context;
 
   bool get isEmpty => _isEmpty;
 
@@ -154,9 +154,9 @@ abstract class _Call {
 
   dynamic get error => _error;
 
-  OnLoadingCallError _onError;
+  OnLoadingCallError? _onError;
 
-  OnLoadingCallError get onError {
+  OnLoadingCallError? get onError {
     return _onError ?? getContext().findAncestorWidgetOfExactType<LoadingCall>()?.onError;
   }
 
@@ -164,7 +164,7 @@ abstract class _Call {
     showToast(_context, "$value");
   }
 
-  Future<T> call<T>(LoadingStateCall call, {bool isShowError = true, bool isShowLoading = true, Duration duration = const Duration(milliseconds: 500)}) async {
+  Future<T> call<T>(LoadingStateCall<T> call, {bool isShowError = true, bool isShowLoading = true, Duration? duration = const Duration(milliseconds: 500)}) async {
     var _loadingController = true == isShowLoading ? showLoading(_context, msg: _text) : null;
     try {
       _error = null;
@@ -187,7 +187,7 @@ abstract class _Call {
 }
 
 class _LoadingCall extends _Call {
-  _LoadingCall(BuildContext _context, String Function(double value) text) {
+  _LoadingCall(BuildContext _context, String Function(double value)? text) {
     _text = text;
     this._context = _context;
   }

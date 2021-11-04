@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
+typedef ToastControllerRemove = void Function();
+
 class ToastController extends ChangeNotifier {
-  Function() _onRemove;
+  ToastControllerRemove? _onRemove;
 
   void remove() {
     _onRemove?.call();
@@ -14,18 +16,18 @@ class ToastController extends ChangeNotifier {
 showToast(
   BuildContext context,
   String msg, {
-  Duration duration,
-  TextStyle textStyle,
-  Alignment alignment,
-  EdgeInsets padding,
-  Color color,
-  Radius radius,
-  ToastController controller,
+  Duration? duration,
+  TextStyle? textStyle,
+  Alignment? alignment,
+  EdgeInsets? padding,
+  Color? color,
+  Radius? radius,
+  ToastController? controller,
   bool rootOverlay = true,
 }) {
-  assert(msg?.isNotEmpty ?? false);
+  assert(msg.isNotEmpty);
   controller ??= ToastController();
-  OverlayEntry overlay;
+  late OverlayEntry overlay;
   var theme = ToastTheme.of(context);
   overlay = OverlayEntry(builder: (_) {
     return ToastTheme(
@@ -43,23 +45,23 @@ showToast(
       ),
     );
   });
-  OverlayState overlayState;
+  OverlayState? overlayState;
   if (context is StatefulElement && context.state is OverlayState) {
     overlayState = context.state as OverlayState;
   } else {
     overlayState = context.findRootAncestorStateOfType<OverlayState>();
   }
-  overlayState.insert(overlay);
+  overlayState!.insert(overlay);
   return controller;
 }
 
 class ToastThemeData {
-  final Duration duration;
-  final TextStyle textStyle;
-  final Alignment alignment;
-  final EdgeInsets padding;
-  final Color color;
-  final Radius radius;
+  final Duration? duration;
+  final TextStyle? textStyle;
+  final Alignment? alignment;
+  final EdgeInsets? padding;
+  final Color? color;
+  final Radius? radius;
 
   const ToastThemeData({
     this.duration,
@@ -71,12 +73,12 @@ class ToastThemeData {
   });
 
   ToastThemeData copyWith({
-    final Duration duration,
-    final TextStyle textStyle,
-    final Alignment alignment,
-    final EdgeInsets padding,
-    final Color color,
-    final Radius radius,
+    final Duration? duration,
+    final TextStyle? textStyle,
+    final Alignment? alignment,
+    final EdgeInsets? padding,
+    final Color? color,
+    final Radius? radius,
   }) {
     return ToastThemeData(
       duration: duration ?? this.duration,
@@ -105,16 +107,16 @@ class ToastThemeData {
 }
 
 class ToastTheme extends InheritedTheme {
-  final ToastThemeData data;
+  final ToastThemeData? data;
 
   const ToastTheme({
-    Key key,
-    this.data,
-    @required Widget child,
+    Key? key,
+    required this.data,
+    required Widget child,
   }) : super(key: key, child: child);
 
-  static ToastThemeData of(BuildContext context) {
-    final ToastTheme inheritedButtonTheme = context.dependOnInheritedWidgetOfExactType<ToastTheme>();
+  static ToastThemeData? of(BuildContext context) {
+    final ToastTheme? inheritedButtonTheme = context.dependOnInheritedWidgetOfExactType<ToastTheme>();
     return inheritedButtonTheme?.data;
   }
 
@@ -125,31 +127,31 @@ class ToastTheme extends InheritedTheme {
 
   @override
   Widget wrap(BuildContext context, Widget child) {
-    final ToastTheme ancestorTheme = context.findAncestorWidgetOfExactType<ToastTheme>();
+    final ToastTheme? ancestorTheme = context.findAncestorWidgetOfExactType<ToastTheme>();
     return identical(this, ancestorTheme) ? child : ToastTheme.fromToastThemeData(data: data, child: child);
   }
 
   const ToastTheme.fromToastThemeData({
-    Key key,
-    @required this.data,
-    Widget child,
+    Key? key,
+    required this.data,
+    required Widget child,
   }) : super(key: key, child: child);
 }
 
 class _Toast extends StatefulWidget {
   final String msg;
-  final VoidCallback onRemove;
-  final Duration duration;
-  final TextStyle textStyle;
-  final Alignment alignment;
-  final EdgeInsets padding;
-  final Color color;
-  final Radius radius;
-  final ToastController toastController;
+  final VoidCallback? onRemove;
+  final Duration? duration;
+  final TextStyle? textStyle;
+  final Alignment? alignment;
+  final EdgeInsets? padding;
+  final Color? color;
+  final Radius? radius;
+  final ToastController? toastController;
 
   const _Toast({
-    Key key,
-    this.msg,
+    Key? key,
+    required this.msg,
     this.onRemove,
     this.duration,
     this.textStyle,
@@ -165,8 +167,8 @@ class _Toast extends StatefulWidget {
 }
 
 class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
-  AnimationController _controller;
-  Timer _timer;
+  late AnimationController _controller;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -176,7 +178,7 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
     _controller.forward();
     super.initState();
     widget.toastController?._onRemove = _onRemove;
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+    WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
       _timer = Timer(widget.duration ?? (ToastTheme.of(context)?.duration ?? Duration(seconds: 2)), () {
         _controller.reverse();
         _timer = null;
@@ -185,7 +187,7 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
   }
 
   _onRemove() {
-    _controller?.reverse();
+    _controller.reverse();
     _timer?.cancel();
     _timer = null;
   }
@@ -203,7 +205,7 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    ToastThemeData theme = ToastTheme.of(context);
+    ToastThemeData? theme = ToastTheme.of(context);
     TextStyle textStyle = TextStyle(
       color: Color(0xFFFFFFFF),
       decoration: TextDecoration.none,
@@ -211,7 +213,7 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
       fontWeight: FontWeight.normal,
     );
     if (null != (widget.textStyle ?? theme?.textStyle)) {
-      textStyle = (widget.textStyle ?? theme?.textStyle).merge(textStyle);
+      textStyle = (widget.textStyle ?? theme?.textStyle)!.merge(textStyle);
     }
 
     return Align(

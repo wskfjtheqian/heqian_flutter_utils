@@ -68,9 +68,11 @@ class MyHomePage extends RouterDataWidget {
   _MyHomePageState createState() => _MyHomePageState();
 
   @override
-  initData(BuildContext context) {
-    return null;
+  initData(BuildContext? context) {
+    throw UnimplementedError();
   }
+
+
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -131,8 +133,11 @@ class ToastPage extends RouterDataWidget {
   @override
   _ToastPageState createState() => _ToastPageState();
 
+
   @override
-  initData(BuildContext context) {}
+  initData(BuildContext? context) {
+    throw UnimplementedError();
+  }
 }
 
 class _ToastPageState extends State<ToastPage> {
