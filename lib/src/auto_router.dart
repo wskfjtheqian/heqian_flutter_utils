@@ -6,10 +6,11 @@ import 'package:flutter/widgets.dart';
 
 typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, dynamic>? params);
 typedef CheckRouter = bool Function(String? path, Map<String, dynamic>? params);
-typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child, String? path, Map<String, dynamic>? params);
+typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child, bool isDialog, String? path, Map<String, dynamic>? params);
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 typedef RouterBuilder = RouterDataWidget Function(BuildContext context);
+typedef IsDialog = bool Function(BaseRouterDelegate delegate);
 
 // ignore: must_be_immutable
 abstract class RouterDataWidget<T> extends StatefulWidget {
@@ -70,19 +71,47 @@ class _HistoryRouter {
   }
 }
 
-class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with ChangeNotifier {
-  List<_BaseRouterDelegate> _usbDelegateList = [];
+class _HistoryRouterBuilde {
+  final bool isDialog;
+
+  final _HistoryRouter router;
+
+  _HistoryRouterBuilde({
+    required this.isDialog,
+    required this.router,
+  });
+}
+
+class _KeyPage extends StatelessWidget {
+  final Widget child;
+
+  _KeyPage({required this.child, required AppRouterData routerData}) : super(key: ValueKey(routerData.path + routerData.params.toString()));
+
+  @override
+  Widget build(BuildContext context) {
+    return child;
+  }
+}
+
+class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with ChangeNotifier {
+  List<BaseRouterDelegate> _usbDelegateList = [];
 
   late CheckRouter _checkRouter;
 
   RouterBuilder? _backgroundBuilder;
 
-  late _BaseRouterDelegate _parent;
+  late BaseRouterDelegate _parent;
 
   PageBuilder? _pageBuilder;
 
-  Page<dynamic> pageBuilder(BuildContext context, Widget child, String? path, Map<String, dynamic>? params) {
-    return (_pageBuilder ?? _parent.pageBuilder).call(context, child, path, params);
+  String? prefixPath;
+
+  Page<dynamic> pageBuilder(BuildContext context, Widget child, bool isDialog, String? path, Map<String, dynamic>? params) {
+    return (_pageBuilder ?? _parent.pageBuilder).call(context, child, isDialog, path, params);
+  }
+
+  AutoPath getAutoPath(String path) {
+    return _parent.getAutoPath(path);
   }
 
   @override
@@ -109,53 +138,78 @@ class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Chang
 
     var pages = <Page>[];
     for (var item in builders) {
-      var widget = item._builder(context, item._routerData.params);
-      if (!item._isInit) {
-        item._data = widget.initData(context);
-        item._isInit = true;
+      var router = item.router;
+      var widget = router._builder(context, router._routerData.params);
+      if (!router._isInit) {
+        router._data = widget.initData(context);
+        router._isInit = true;
       }
-      widget._data = item._data;
-      pages.add(pageBuilder(context, widget, item._routerData.path, item._routerData.params));
+      widget._data = router._data;
+      pages.add(pageBuilder(
+        context,
+        _KeyPage(child: widget, routerData: router._routerData),
+        item.isDialog,
+        router._routerData.path,
+        router._routerData.params,
+      ));
     }
 
     return Navigator(
       pages: pages,
       onPopPage: (route, result) {
-        return Navigator.of(context).widget.onPopPage!(route, result);
+        return Navigator
+            .of(context)
+            .widget
+            .onPopPage!(route, result);
       },
     );
   }
 
-  List<_HistoryRouter> getWidgetBuilders(BuildContext context) {
-    var builders = <_HistoryRouter>[];
+  List<_HistoryRouterBuilde> getWidgetBuilders(BuildContext context) {
+    var builders = <_HistoryRouterBuilde>[];
     for (var item in historyList) {
-      if (!_isSubRouter(context, item._routerData)) {
-        builders.add(item);
+      var ret = _isSubRouter(context, item._routerData);
+      if (ret.sub || ret.dialog) {
+        continue;
       }
+      builders.add(_HistoryRouterBuilde(isDialog: false, router: item));
     }
     if (builders.isEmpty) {
-      builders.add(_HistoryRouter(AppRouterData(path: "/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget()));
+      builders.add(_HistoryRouterBuilde(
+        isDialog: false,
+        router: _HistoryRouter(AppRouterData(path: "/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget()),
+      ));
     }
+
     return builders;
   }
 
-  bool _isSubRouter(BuildContext context, AppRouterData? configuration) {
+  IsSub _isSubRouter(BuildContext context, AppRouterData? configuration) {
+    var isDialogCall = getAutoPath(configuration!.path).isDialog;
     for (var item in _usbDelegateList) {
-      if (item._checkRouter(configuration?.path, configuration?.params)) {
-        return true;
+      var dialog = isDialogCall?.call(item) ?? false;
+      if (!dialog && item._checkRouter(configuration.path, configuration.params)) {
+        return IsSub(
+          sub: true,
+          dialog: dialog,
+        );
+      }
+      var ret = item._isSubRouter(context, configuration);
+      if (ret.sub) {
+        return ret;
       }
     }
-    return false;
+    return IsSub(sub: false, dialog: isDialogCall?.call(this) ?? false);
   }
 
-  void _addSubRouterDelegate(_BaseRouterDelegate delegate) {
+  void _addSubRouterDelegate(BaseRouterDelegate delegate) {
     WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
       _usbDelegateList.add(delegate);
       notifyListeners();
     });
   }
 
-  void _removeSubRouterDelegate(_BaseRouterDelegate delegate) {
+  void _removeSubRouterDelegate(BaseRouterDelegate delegate) {
     WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
       _usbDelegateList.remove(delegate);
       notifyListeners();
@@ -171,7 +225,14 @@ class _BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Chang
   Future<void> setNewRoutePath(List<AppRouterData> configuration) async {}
 }
 
-class AppRouterDelegate extends _BaseRouterDelegate
+class IsSub {
+  final bool sub;
+  final bool dialog;
+
+  IsSub({required this.sub, required this.dialog});
+}
+
+class AppRouterDelegate extends BaseRouterDelegate
     with PopNavigatorRouterDelegateMixin<List<AppRouterData>>
     implements RouteInformationParser<List<AppRouterData>> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
@@ -182,7 +243,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
 
   AppRouterDelegate._();
 
-  Map<String, RouterWidgetBuilder> _routers = {};
+  Map<AutoPath, RouterWidgetBuilder> _routers = {};
 
   List<_HistoryRouter> _historyList = [];
 
@@ -198,13 +259,20 @@ class AppRouterDelegate extends _BaseRouterDelegate
 
     var pages = <Page>[];
     for (var item in builders) {
-      var widget = item._builder(context, item._routerData.params);
-      if (!item._isInit) {
-        item._data = widget.initData(navigatorKey.currentState?.overlay?.context);
-        item._isInit = true;
+      var router = item.router;
+      var widget = router._builder(context, router._routerData.params);
+      if (!router._isInit) {
+        router._data = widget.initData(navigatorKey.currentState?.overlay?.context);
+        router._isInit = true;
       }
-      widget._data = item._data;
-      pages.add(_pageBuilder!(context, widget, item._routerData.path, item._routerData.params));
+      widget._data = router._data;
+      pages.add(pageBuilder(
+        context,
+        _KeyPage(child: widget, routerData: router._routerData),
+        item.isDialog,
+        router._routerData.path,
+        router._routerData.params,
+      ));
     }
 
     return Navigator(
@@ -242,6 +310,26 @@ class AppRouterDelegate extends _BaseRouterDelegate
   }
 
   @override
+  List<_HistoryRouterBuilde> getWidgetBuilders(BuildContext context) {
+    var builders = <_HistoryRouterBuilde>[];
+    for (var item in historyList) {
+      var ret = _isSubRouter(context, item._routerData);
+      if (ret.sub) {
+        continue;
+      }
+
+      builders.add(_HistoryRouterBuilde(isDialog: ret.dialog, router: item));
+    }
+    if (builders.isEmpty) {
+      builders.add(_HistoryRouterBuilde(
+        isDialog: false,
+        router: _HistoryRouter(AppRouterData(path: "/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget()),
+      ));
+    }
+    return builders;
+  }
+
+  @override
   Future<List<AppRouterData>> parseRouteInformation(RouteInformation routeInformation) async {
     var uri = Uri.parse(routeInformation.location!);
     return _paresPath(uri.path, uri.queryParameters);
@@ -267,7 +355,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
   Future<_HistoryRouter?> _addHistoryList(List<AppRouterData> configuration) async {
     if (configuration.isNotEmpty) {
       for (var item in configuration) {
-        this._historyList.add(_HistoryRouter(item, _routers[item.path]!));
+        this._historyList.add(_HistoryRouter(item, _routers[AutoPath(item.path)]!));
 
         // var completer = Completer();
         // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -282,7 +370,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
   }
 
   Future<T?> pushNamed<T>(String name, Map<String, dynamic>? params) async {
-    if (!_routers.containsKey(name)) {
+    if (!_routers.containsKey(AutoPath(name))) {
       throw "Not fond Router by $name";
     }
 
@@ -299,7 +387,7 @@ class AppRouterDelegate extends _BaseRouterDelegate
       return false;
     });
 
-    if (!_routers.containsKey(name)) {
+    if (!_routers.containsKey(AutoPath(name))) {
       throw "Not fond Router by $name";
     }
 
@@ -343,6 +431,17 @@ class AppRouterDelegate extends _BaseRouterDelegate
     }
     return ret;
   }
+
+  @override
+  AutoPath getAutoPath(String path) {
+    var temp = AutoPath(path);
+    for (var item in _routers.entries) {
+      if (item.key == temp) {
+        return item.key;
+      }
+    }
+    return null!;
+  }
 }
 
 class SubRouter extends StatefulWidget {
@@ -357,14 +456,19 @@ class SubRouter extends StatefulWidget {
     this.prefixPath,
     this.backgroundBuilder,
     this.pageBuilder,
-  })  : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
+  })
+      : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
         super(key: key);
 
+  static _SubRouterState? of(BuildContext context) {
+    return context.findAncestorStateOfType<_SubRouterState>();
+  }
+
   @override
-  _SubRouterState createState() => _SubRouterState<_BaseRouterDelegate, SubRouter>(_BaseRouterDelegate());
+  _SubRouterState createState() => _SubRouterState<BaseRouterDelegate, SubRouter>(BaseRouterDelegate());
 }
 
-class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter> extends State<T> {
+class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends State<T> {
   final E _delegate;
   _SubRouterState? _routerState;
 
@@ -380,6 +484,7 @@ class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter> extend
     }
     _delegate._checkRouter = widget.checkRouter ?? _checkRouter;
     _delegate._backgroundBuilder = widget.backgroundBuilder;
+    _delegate.prefixPath = widget.prefixPath;
     super.initState();
   }
 
@@ -405,23 +510,21 @@ class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter> extend
     return path?.startsWith(widget.prefixPath!) ?? false;
   }
 
-  void _addSubRouterDelegate(_BaseRouterDelegate delegate) {
+  void _addSubRouterDelegate(BaseRouterDelegate delegate) {
     _delegate._addSubRouterDelegate(delegate);
   }
 
-  void _removeSubRouterDelegate(_BaseRouterDelegate delegate) {
+  void _removeSubRouterDelegate(BaseRouterDelegate delegate) {
     _delegate._removeSubRouterDelegate(delegate);
   }
 
-  Future<T?> pushNamed<T extends Object>(
-    String name, {
+  Future<T?> pushNamed<T extends Object>(String name, {
     Map<String, dynamic>? params,
   }) {
     return _routerState!.pushNamed(name, params: params);
   }
 
-  Future<T?> pushNamedAndRemoveUntil<T extends Object>(
-    String path, {
+  Future<T?> pushNamedAndRemoveUntil<T extends Object>(String path, {
     AutoRoutePredicate? predicate,
     Map<String, dynamic>? params,
   }) {
@@ -437,11 +540,31 @@ class _SubRouterState<E extends _BaseRouterDelegate, T extends SubRouter> extend
   void popUntil(AutoRoutePredicate predicate) {
     return _routerState!.popUntil(predicate);
   }
+
+  Size? get size {
+    return context
+        .findRenderObject()
+        ?.paintBounds
+        .size;
+  }
+}
+
+class AutoPath {
+  final String path;
+  final IsDialog? isDialog;
+
+  AutoPath(this.path, [this.isDialog]);
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is AutoPath && runtimeType == other.runtimeType && path == other.path;
+
+  @override
+  int get hashCode => path.hashCode;
 }
 
 class AutoRouter extends SubRouter {
   final Widget Function(BuildContext context, AppRouterDelegate appRouter) builder;
-  final Map<String, RouterWidgetBuilder> routers;
+  final Map<AutoPath, RouterWidgetBuilder> routers;
   final String? home;
 
   const AutoRouter({
@@ -452,11 +575,11 @@ class AutoRouter extends SubRouter {
     required PageBuilder pageBuilder,
     RouterBuilder? backgroundBuilder,
   }) : super(
-          key: key,
-          prefixPath: home,
-          backgroundBuilder: backgroundBuilder,
-          pageBuilder: pageBuilder,
-        );
+    key: key,
+    prefixPath: home,
+    backgroundBuilder: backgroundBuilder,
+    pageBuilder: pageBuilder,
+  );
 
   static _SubRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _SubRouterState) {
@@ -526,9 +649,74 @@ bool isSubRouter(BuildContext context) {
 bool checkRouter(BuildContext context, AutoRoutePredicate predicate) {
   _AutoRouterState state = context.findRootAncestorStateOfType<_AutoRouterState>()!;
   for (var item in state._delegate._historyList) {
+    // var call = state._delegate.getAutoPath(item._routerData.path);
+    // if (call.isDialog?.call(state._delegate) ?? false) {
+    //   return false;
+    // }
     if (predicate(item._routerData)) {
       return true;
     }
   }
   return false;
+}
+
+class AutoPage<T> extends Page<T> {
+  /// Creates a material page.
+  const AutoPage({
+    required this.child,
+    this.maintainState = true,
+    this.fullscreenDialog = false,
+    LocalKey? key,
+    String? name,
+    Object? arguments,
+    String? restorationId,
+  })
+      : assert(child != null),
+        assert(maintainState != null),
+        assert(fullscreenDialog != null),
+        super(key: key, name: name, arguments: arguments, restorationId: restorationId);
+
+  final Widget child;
+
+  final bool maintainState;
+
+  final bool fullscreenDialog;
+
+  @override
+  Route<T> createRoute(BuildContext context) {
+    if (fullscreenDialog) {
+      return DialogRoute(
+        context: context,
+        builder: (context) => child,
+        settings: this,
+      );
+    }
+    return _PageBasedMaterialPageRoute<T>(page: this);
+  }
+}
+
+class _PageBasedMaterialPageRoute<T> extends PageRoute<T> with MaterialRouteTransitionMixin<T> {
+  _PageBasedMaterialPageRoute({
+    required AutoPage<T> page,
+  })
+      : assert(page != null),
+        super(settings: page) {
+    assert(opaque);
+  }
+
+  AutoPage<T> get _page => settings as AutoPage<T>;
+
+  @override
+  Widget buildContent(BuildContext context) {
+    return _page.child;
+  }
+
+  @override
+  bool get maintainState => _page.maintainState;
+
+  @override
+  bool get fullscreenDialog => _page.fullscreenDialog;
+
+  @override
+  String get debugLabel => '${super.debugLabel}(${_page.name})';
 }
