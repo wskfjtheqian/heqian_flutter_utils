@@ -10,10 +10,10 @@ typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child,
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 typedef RouterBuilder = RouterDataWidget Function(BuildContext context);
-typedef IsDialog = bool Function(BaseRouterDelegate delegate);
+typedef IsDialog = bool Function(BuildContext context, BaseRouterDelegate delegate);
 
 // ignore: must_be_immutable
-abstract class RouterDataWidget<T> extends StatefulWidget {
+abstract class RouterDataWidget<T extends ChangeNotifier> extends StatefulWidget {
   T? _data;
 
   RouterDataWidget({Key? key}) : super(key: key);
@@ -157,10 +157,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
     return Navigator(
       pages: pages,
       onPopPage: (route, result) {
-        return Navigator
-            .of(context)
-            .widget
-            .onPopPage!(route, result);
+        return Navigator.of(context).widget.onPopPage!(route, result);
       },
     );
   }
@@ -187,7 +184,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
   IsSub _isSubRouter(BuildContext context, AppRouterData? configuration) {
     var isDialogCall = getAutoPath(configuration!.path).isDialog;
     for (var item in _usbDelegateList) {
-      var dialog = isDialogCall?.call(item) ?? false;
+      var dialog = isDialogCall?.call(context,item) ?? false;
       if (!dialog && item._checkRouter(configuration.path, configuration.params)) {
         return IsSub(
           sub: true,
@@ -199,7 +196,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
         return ret;
       }
     }
-    return IsSub(sub: false, dialog: isDialogCall?.call(this) ?? false);
+    return IsSub(sub: false, dialog: isDialogCall?.call(context,this) ?? false);
   }
 
   void _addSubRouterDelegate(BaseRouterDelegate delegate) {
@@ -456,8 +453,7 @@ class SubRouter extends StatefulWidget {
     this.prefixPath,
     this.backgroundBuilder,
     this.pageBuilder,
-  })
-      : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
+  })  : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
         super(key: key);
 
   static _SubRouterState? of(BuildContext context) {
@@ -518,13 +514,15 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
     _delegate._removeSubRouterDelegate(delegate);
   }
 
-  Future<T?> pushNamed<T extends Object>(String name, {
+  Future<T?> pushNamed<T extends Object>(
+    String name, {
     Map<String, dynamic>? params,
   }) {
     return _routerState!.pushNamed(name, params: params);
   }
 
-  Future<T?> pushNamedAndRemoveUntil<T extends Object>(String path, {
+  Future<T?> pushNamedAndRemoveUntil<T extends Object>(
+    String path, {
     AutoRoutePredicate? predicate,
     Map<String, dynamic>? params,
   }) {
@@ -542,10 +540,7 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
   }
 
   Size? get size {
-    return context
-        .findRenderObject()
-        ?.paintBounds
-        .size;
+    return context.findRenderObject()?.paintBounds.size;
   }
 }
 
@@ -575,11 +570,11 @@ class AutoRouter extends SubRouter {
     required PageBuilder pageBuilder,
     RouterBuilder? backgroundBuilder,
   }) : super(
-    key: key,
-    prefixPath: home,
-    backgroundBuilder: backgroundBuilder,
-    pageBuilder: pageBuilder,
-  );
+          key: key,
+          prefixPath: home,
+          backgroundBuilder: backgroundBuilder,
+          pageBuilder: pageBuilder,
+        );
 
   static _SubRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _SubRouterState) {
@@ -670,8 +665,7 @@ class AutoPage<T> extends Page<T> {
     String? name,
     Object? arguments,
     String? restorationId,
-  })
-      : assert(child != null),
+  })  : assert(child != null),
         assert(maintainState != null),
         assert(fullscreenDialog != null),
         super(key: key, name: name, arguments: arguments, restorationId: restorationId);
@@ -698,8 +692,7 @@ class AutoPage<T> extends Page<T> {
 class _PageBasedMaterialPageRoute<T> extends PageRoute<T> with MaterialRouteTransitionMixin<T> {
   _PageBasedMaterialPageRoute({
     required AutoPage<T> page,
-  })
-      : assert(page != null),
+  })  : assert(page != null),
         super(settings: page) {
     assert(opaque);
   }
