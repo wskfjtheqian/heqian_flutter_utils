@@ -120,7 +120,7 @@ class SubRouterPage2 extends RouterDataWidget<SubRouterPage2Data> {
 
 
   @override
-  initData(BuildContext? context) {
+  initData(BuildContext context) {
     throw UnimplementedError();
   }
 }

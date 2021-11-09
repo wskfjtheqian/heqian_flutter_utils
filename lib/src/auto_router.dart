@@ -6,13 +6,12 @@ import 'package:flutter/widgets.dart';
 
 typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, dynamic>? params);
 typedef CheckRouter = bool Function(String? path, Map<String, dynamic>? params);
-typedef PageBuilder = Page<dynamic> Function(BuildContext context, Widget child, bool isDialog, String? path, Map<String, dynamic>? params);
+typedef PageBuilder = Page<dynamic> Function(BuildContext context, _KeyPage child, bool isDialog, String? path, Map<String, dynamic>? params);
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 typedef RouterBuilder = RouterDataWidget Function(BuildContext context);
 typedef IsDialog = bool Function(BuildContext context, BaseRouterDelegate delegate);
 
-// ignore: must_be_immutable
 abstract class RouterDataWidget<T extends ChangeNotifier> extends StatefulWidget {
   T? _data;
 
@@ -24,6 +23,34 @@ abstract class RouterDataWidget<T extends ChangeNotifier> extends StatefulWidget
 
   set data(T? value) {
     _data = value;
+  }
+}
+
+abstract class RouterDataWidgetState<T extends RouterDataWidget> extends State<T> {
+  @override
+  void initState() {
+    super.initState();
+
+    widget.data?.addListener(_valueChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant T oldWidget) {
+    if (oldWidget.data != widget.data) {
+      oldWidget.data?.removeListener(_valueChanged);
+      widget.data?.addListener(_valueChanged);
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void dispose() {
+    widget.data?.removeListener(_valueChanged);
+    super.dispose();
+  }
+
+  void _valueChanged() {
+    setState(() {});
   }
 }
 
@@ -82,10 +109,22 @@ class _HistoryRouterBuilde {
   });
 }
 
+abstract class PageSize {
+  Size get size;
+}
+
 class _KeyPage extends StatelessWidget {
   final Widget child;
 
-  _KeyPage({required this.child, required AppRouterData routerData}) : super(key: ValueKey(routerData.path + routerData.params.toString()));
+  Size? _size;
+
+  Size? get size => _size;
+
+  _KeyPage({required this.child, required AppRouterData routerData}) : super(key: ValueKey(routerData.path + routerData.params.toString())) {
+    if (child is PageSize) {
+      _size = (child as PageSize).size;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +145,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
 
   String? prefixPath;
 
-  Page<dynamic> pageBuilder(BuildContext context, Widget child, bool isDialog, String? path, Map<String, dynamic>? params) {
+  Page<dynamic> pageBuilder(BuildContext context, _KeyPage child, bool isDialog, String? path, Map<String, dynamic>? params) {
     return (_pageBuilder ?? _parent.pageBuilder).call(context, child, isDialog, path, params);
   }
 
@@ -184,7 +223,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
   IsSub _isSubRouter(BuildContext context, AppRouterData? configuration) {
     var isDialogCall = getAutoPath(configuration!.path).isDialog;
     for (var item in _usbDelegateList) {
-      var dialog = isDialogCall?.call(context,item) ?? false;
+      var dialog = isDialogCall?.call(context, item) ?? false;
       if (!dialog && item._checkRouter(configuration.path, configuration.params)) {
         return IsSub(
           sub: true,
@@ -196,7 +235,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
         return ret;
       }
     }
-    return IsSub(sub: false, dialog: isDialogCall?.call(context,this) ?? false);
+    return IsSub(sub: false, dialog: isDialogCall?.call(context, this) ?? false);
   }
 
   void _addSubRouterDelegate(BaseRouterDelegate delegate) {
@@ -644,10 +683,10 @@ bool isSubRouter(BuildContext context) {
 bool checkRouter(BuildContext context, AutoRoutePredicate predicate) {
   _AutoRouterState state = context.findRootAncestorStateOfType<_AutoRouterState>()!;
   for (var item in state._delegate._historyList) {
-    // var call = state._delegate.getAutoPath(item._routerData.path);
-    // if (call.isDialog?.call(state._delegate) ?? false) {
-    //   return false;
-    // }
+    var call = state._delegate.getAutoPath(item._routerData.path);
+    if (call.isDialog?.call(state._delegate) ?? false) {
+      return false;
+    }
     if (predicate(item._routerData)) {
       return true;
     }
