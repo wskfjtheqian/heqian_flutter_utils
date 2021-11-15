@@ -12,7 +12,11 @@ typedef OpenSubRouter = bool Function(BuildContext context);
 typedef RouterBuilder = RouterDataWidget Function(BuildContext context);
 typedef IsDialog = bool Function(BuildContext context, BaseRouterDelegate delegate);
 
-abstract class RouterDataWidget<T extends ChangeNotifier> extends StatefulWidget {
+class RouterDataNotifier extends ValueNotifier<bool> {
+  RouterDataNotifier() : super(false);
+}
+
+abstract class RouterDataWidget<T extends RouterDataNotifier> extends StatefulWidget {
   T? _data;
 
   RouterDataWidget({Key? key}) : super(key: key);
@@ -52,6 +56,20 @@ abstract class RouterDataWidgetState<T extends RouterDataWidget> extends State<T
   void _valueChanged() {
     setState(() {});
   }
+
+  @override
+  Widget build(BuildContext context) {
+    if (null == widget.data || widget.data!.value) {
+      return buildContent(context);
+    }
+    return buildInit(context);
+  }
+
+  Widget buildInit(BuildContext context) {
+    return Container();
+  }
+
+  Widget buildContent(BuildContext context);
 }
 
 class _DefaultWidget extends RouterDataWidget {
@@ -59,9 +77,7 @@ class _DefaultWidget extends RouterDataWidget {
   __DefaultWidgetState createState() => __DefaultWidgetState();
 
   @override
-  ChangeNotifier? initData(BuildContext? context) {
-    return null;
-  }
+  initData(BuildContext? context) {}
 }
 
 class __DefaultWidgetState extends State<_DefaultWidget> {
@@ -683,10 +699,10 @@ bool isSubRouter(BuildContext context) {
 bool checkRouter(BuildContext context, AutoRoutePredicate predicate) {
   _AutoRouterState state = context.findRootAncestorStateOfType<_AutoRouterState>()!;
   for (var item in state._delegate._historyList) {
-    var call = state._delegate.getAutoPath(item._routerData.path);
-    if (call.isDialog?.call(state._delegate) ?? false) {
-      return false;
-    }
+    // var call = state._delegate.getAutoPath(item._routerData.path);
+    // if (call.isDialog?.call(state._delegate) ?? false) {
+    //   return false;
+    // }
     if (predicate(item._routerData)) {
       return true;
     }
@@ -722,6 +738,7 @@ class AutoPage<T> extends Page<T> {
         context: context,
         builder: (context) => child,
         settings: this,
+        barrierColor: Colors.transparent,
       );
     }
     return _PageBasedMaterialPageRoute<T>(page: this);
