@@ -66,7 +66,9 @@ abstract class RouterDataWidgetState<T extends RouterDataWidget> extends State<T
   }
 
   Widget buildInit(BuildContext context) {
-    return Container();
+    return Container(
+      color: Colors.white,
+    );
   }
 
   Widget buildContent(BuildContext context);
