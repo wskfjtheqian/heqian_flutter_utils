@@ -12,8 +12,41 @@ typedef OpenSubRouter = bool Function(BuildContext context);
 typedef RouterBuilder = RouterDataWidget Function(BuildContext context);
 typedef IsDialog = bool Function(BuildContext context, BaseRouterDelegate delegate);
 
-class RouterDataNotifier extends ValueNotifier<bool> {
+abstract class RouterDataNotifier extends ValueNotifier<bool> {
+  bool _dispose = false;
+
   RouterDataNotifier() : super(false);
+
+  Future<void> init(BuildContext context);
+
+  @override
+  void dispose() {
+    if (!_dispose) {
+      super.dispose();
+      _dispose = true;
+    }
+  }
+
+  @override
+  void addListener(VoidCallback listener) {
+    if (!_dispose) {
+      super.addListener(listener);
+    }
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    if (!_dispose) {
+      super.removeListener(listener);
+    }
+  }
+
+  @override
+  set value(bool newValue) {
+    if (!_dispose) {
+      super.value = newValue;
+    }
+  }
 }
 
 abstract class RouterDataWidget<T extends RouterDataNotifier> extends StatefulWidget {
@@ -34,7 +67,6 @@ abstract class RouterDataWidgetState<T extends RouterDataWidget> extends State<T
   @override
   void initState() {
     super.initState();
-
     widget.data?.addListener(_valueChanged);
   }
 
@@ -102,7 +134,7 @@ class AppRouterData {
 }
 
 class _HistoryRouter {
-  dynamic _data;
+  RouterDataNotifier? _data;
   bool _isInit = false;
   AppRouterData _routerData;
   RouterWidgetBuilder _builder;
@@ -199,6 +231,11 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
       var widget = router._builder(context, router._routerData.params);
       if (!router._isInit) {
         router._data = widget.initData(context);
+        if (null != router._data) {
+          WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+            router._data?.init(context);
+          });
+        }
         router._isInit = true;
       }
       widget._data = router._data;
@@ -317,6 +354,11 @@ class AppRouterDelegate extends BaseRouterDelegate
       var widget = router._builder(context, router._routerData.params);
       if (!router._isInit) {
         router._data = widget.initData(navigatorKey.currentState?.overlay?.context);
+        if (null != router._data) {
+          WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+            router._data?.init(context);
+          });
+        }
         router._isInit = true;
       }
       widget._data = router._data;
@@ -436,6 +478,7 @@ class AppRouterDelegate extends BaseRouterDelegate
     _historyList.removeWhere((element) {
       if (predicate?.call(element._routerData) ?? false) {
         element.result.complete(null);
+        element._data?.dispose();
         return true;
       }
       return false;
@@ -453,6 +496,7 @@ class AppRouterDelegate extends BaseRouterDelegate
     _historyList.removeWhere((element) {
       if (predicate.call(element._routerData)) {
         element.result.complete(null);
+        element._data?.dispose();
         return true;
       }
       return false;
@@ -463,6 +507,7 @@ class AppRouterDelegate extends BaseRouterDelegate
   void pop<T extends Object>(T? result) {
     if (_historyList.isNotEmpty) {
       _historyList.last.result.complete(result);
+      _historyList.last._data?.dispose();
       _historyList.removeLast();
     }
     notifyListeners();
