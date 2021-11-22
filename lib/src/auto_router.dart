@@ -251,7 +251,10 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
     return Navigator(
       pages: pages,
       onPopPage: (route, result) {
-        return Navigator.of(context).widget.onPopPage!(route, result);
+        return Navigator
+            .of(context)
+            .widget
+            .onPopPage!(route, result);
       },
     );
   }
@@ -506,9 +509,10 @@ class AppRouterDelegate extends BaseRouterDelegate
 
   void pop<T extends Object>(T? result) {
     if (_historyList.isNotEmpty) {
-      _historyList.last.result.complete(result);
-      _historyList.last._data?.dispose();
+      var last = _historyList.last;
       _historyList.removeLast();
+      last.result.complete(result);
+      last._data?.dispose();
     }
     notifyListeners();
   }
@@ -555,7 +559,8 @@ class SubRouter extends StatefulWidget {
     this.prefixPath,
     this.backgroundBuilder,
     this.pageBuilder,
-  })  : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
+  })
+      : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
         super(key: key);
 
   static _SubRouterState? of(BuildContext context) {
@@ -616,15 +621,13 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
     _delegate._removeSubRouterDelegate(delegate);
   }
 
-  Future<T?> pushNamed<T extends Object>(
-    String name, {
+  Future<T?> pushNamed<T extends Object>(String name, {
     Map<String, dynamic>? params,
   }) {
     return _routerState!.pushNamed(name, params: params);
   }
 
-  Future<T?> pushNamedAndRemoveUntil<T extends Object>(
-    String path, {
+  Future<T?> pushNamedAndRemoveUntil<T extends Object>(String path, {
     AutoRoutePredicate? predicate,
     Map<String, dynamic>? params,
   }) {
@@ -642,7 +645,10 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
   }
 
   Size? get size {
-    return context.findRenderObject()?.paintBounds.size;
+    return context
+        .findRenderObject()
+        ?.paintBounds
+        .size;
   }
 }
 
@@ -672,11 +678,11 @@ class AutoRouter extends SubRouter {
     required PageBuilder pageBuilder,
     RouterBuilder? backgroundBuilder,
   }) : super(
-          key: key,
-          prefixPath: home,
-          backgroundBuilder: backgroundBuilder,
-          pageBuilder: pageBuilder,
-        );
+    key: key,
+    prefixPath: home,
+    backgroundBuilder: backgroundBuilder,
+    pageBuilder: pageBuilder,
+  );
 
   static _SubRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _SubRouterState) {
@@ -767,7 +773,8 @@ class AutoPage<T> extends Page<T> {
     String? name,
     Object? arguments,
     String? restorationId,
-  })  : assert(child != null),
+  })
+      : assert(child != null),
         assert(maintainState != null),
         assert(fullscreenDialog != null),
         super(key: key, name: name, arguments: arguments, restorationId: restorationId);
@@ -795,7 +802,8 @@ class AutoPage<T> extends Page<T> {
 class _PageBasedMaterialPageRoute<T> extends PageRoute<T> with MaterialRouteTransitionMixin<T> {
   _PageBasedMaterialPageRoute({
     required AutoPage<T> page,
-  })  : assert(page != null),
+  })
+      : assert(page != null),
         super(settings: page) {
     assert(opaque);
   }
