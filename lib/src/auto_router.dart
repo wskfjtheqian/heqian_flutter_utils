@@ -55,6 +55,13 @@ abstract class RouterDataNotifier extends ValueNotifier<bool> {
       super.value = newValue;
     }
   }
+
+  @override
+  void notifyListeners() {
+    if (!_dispose) {
+      super.notifyListeners();
+    }
+  }
 }
 
 abstract class RouterDataWidget<T extends RouterDataNotifier> extends StatefulWidget {
