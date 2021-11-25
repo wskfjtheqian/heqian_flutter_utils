@@ -19,6 +19,14 @@ abstract class RouterDataNotifier extends ValueNotifier<bool> {
 
   Future<void> init(BuildContext context);
 
+  Future<void> initData(BuildContext context) async {
+    try {
+      await init(context);
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   void dispose() {
     if (!_dispose) {
@@ -233,7 +241,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
         router._data = widget.initData(context);
         if (null != router._data) {
           WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-            router._data?.init(context);
+            router._data?.initData(context);
           });
         }
         router._isInit = true;
@@ -251,10 +259,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
     return Navigator(
       pages: pages,
       onPopPage: (route, result) {
-        return Navigator
-            .of(context)
-            .widget
-            .onPopPage!(route, result);
+        return Navigator.of(context).widget.onPopPage!(route, result);
       },
     );
   }
@@ -359,7 +364,7 @@ class AppRouterDelegate extends BaseRouterDelegate
         router._data = widget.initData(navigatorKey.currentState?.overlay?.context);
         if (null != router._data) {
           WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-            router._data?.init(context);
+            router._data?.initData(context);
           });
         }
         router._isInit = true;
@@ -384,10 +389,12 @@ class AppRouterDelegate extends BaseRouterDelegate
         _historyList.removeWhere((element) {
           if (route.settings.name == element._routerData.path) {
             element.result.complete(result);
+            element._data?.dispose();
             return true;
           }
           if (element._routerData.path.startsWith(route.settings.name ?? "")) {
             element.result.complete(null);
+            element._data?.dispose();
             return true;
           }
           return false;
@@ -559,8 +566,7 @@ class SubRouter extends StatefulWidget {
     this.prefixPath,
     this.backgroundBuilder,
     this.pageBuilder,
-  })
-      : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
+  })  : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
         super(key: key);
 
   static _SubRouterState? of(BuildContext context) {
@@ -621,13 +627,15 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
     _delegate._removeSubRouterDelegate(delegate);
   }
 
-  Future<T?> pushNamed<T extends Object>(String name, {
+  Future<T?> pushNamed<T extends Object>(
+    String name, {
     Map<String, dynamic>? params,
   }) {
     return _routerState!.pushNamed(name, params: params);
   }
 
-  Future<T?> pushNamedAndRemoveUntil<T extends Object>(String path, {
+  Future<T?> pushNamedAndRemoveUntil<T extends Object>(
+    String path, {
     AutoRoutePredicate? predicate,
     Map<String, dynamic>? params,
   }) {
@@ -645,10 +653,7 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
   }
 
   Size? get size {
-    return context
-        .findRenderObject()
-        ?.paintBounds
-        .size;
+    return context.findRenderObject()?.paintBounds.size;
   }
 }
 
@@ -678,11 +683,11 @@ class AutoRouter extends SubRouter {
     required PageBuilder pageBuilder,
     RouterBuilder? backgroundBuilder,
   }) : super(
-    key: key,
-    prefixPath: home,
-    backgroundBuilder: backgroundBuilder,
-    pageBuilder: pageBuilder,
-  );
+          key: key,
+          prefixPath: home,
+          backgroundBuilder: backgroundBuilder,
+          pageBuilder: pageBuilder,
+        );
 
   static _SubRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _SubRouterState) {
@@ -773,8 +778,7 @@ class AutoPage<T> extends Page<T> {
     String? name,
     Object? arguments,
     String? restorationId,
-  })
-      : assert(child != null),
+  })  : assert(child != null),
         assert(maintainState != null),
         assert(fullscreenDialog != null),
         super(key: key, name: name, arguments: arguments, restorationId: restorationId);
@@ -802,8 +806,7 @@ class AutoPage<T> extends Page<T> {
 class _PageBasedMaterialPageRoute<T> extends PageRoute<T> with MaterialRouteTransitionMixin<T> {
   _PageBasedMaterialPageRoute({
     required AutoPage<T> page,
-  })
-      : assert(page != null),
+  })  : assert(page != null),
         super(settings: page) {
     assert(opaque);
   }
