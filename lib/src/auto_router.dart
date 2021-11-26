@@ -466,6 +466,12 @@ class AppRouterDelegate extends BaseRouterDelegate
   @override
   Future<void> setNewRoutePath(List<AppRouterData> configuration) async {
     if (configuration.isNotEmpty) {
+      if (this._historyList.isNotEmpty) {
+        if (Uri(path: configuration.last.path, queryParameters: configuration.last.params) ==
+            Uri(path: this._historyList.last._routerData.path, queryParameters: this._historyList.last._routerData.params)) {
+          return;
+        }
+      }
       await _addHistoryList(configuration);
     }
   }
@@ -492,7 +498,7 @@ class AppRouterDelegate extends BaseRouterDelegate
       throw "Not fond Router by $name";
     }
 
-    var router = await _addHistoryList(_paresPath(name, params));
+    var router = await _addHistoryList(_paresPath(name, params ?? {}));
     return await router!.result.future;
   }
 
@@ -512,7 +518,7 @@ class AppRouterDelegate extends BaseRouterDelegate
       throw "Not fond Router by $name";
     }
 
-    var router = await _addHistoryList(_paresPath(name, params));
+    var router = await _addHistoryList(_paresPath(name, params ?? {}));
     return await router!.result.future;
   }
 
@@ -542,7 +548,7 @@ class AppRouterDelegate extends BaseRouterDelegate
     notifyListeners();
   }
 
-  List<AppRouterData> _paresPath(String name, Map<String, dynamic>? params) {
+  List<AppRouterData> _paresPath(String name, Map<String, dynamic> params) {
     var paths = name.split("/");
     var ret = <AppRouterData>[];
     var path = "";
