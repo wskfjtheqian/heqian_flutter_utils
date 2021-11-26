@@ -11,6 +11,7 @@ class LoadingCall extends StatefulWidget {
   final Future<bool> Function(BuildContext context)? onInitLoading;
   final Widget Function(BuildContext context, dynamic error)? errorBuilder;
   final OnLoadingCallError? onError;
+  final LoadingThemeData? data;
 
   const LoadingCall({
     Key? key,
@@ -20,6 +21,7 @@ class LoadingCall extends StatefulWidget {
     this.emptyBuilder,
     this.errorBuilder,
     this.initBuilder,
+    this.data,
   }) : super(key: key);
 
   @override
@@ -90,6 +92,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
       child = widget.builder(context);
     }
     return LoadingTheme(
+      data: widget.data,
       child: child,
     );
   }
@@ -157,14 +160,17 @@ abstract class _Call {
   OnLoadingCallError? _onError;
 
   OnLoadingCallError? get onError {
-    return _onError ?? getContext().findAncestorWidgetOfExactType<LoadingCall>()?.onError;
+    return _onError ?? getContext()
+        .findAncestorWidgetOfExactType<LoadingCall>()
+        ?.onError;
   }
 
   showError(dynamic value, bool isShow) {
     showToast(_context, "$value");
   }
 
-  Future<T> call<T>(LoadingStateCall<T> call, {bool isShowError = true, bool isShowLoading = true, Duration? duration = const Duration(milliseconds: 500)}) async {
+  Future<T> call<T>(LoadingStateCall<T> call,
+      {bool isShowError = true, bool isShowLoading = true, Duration? duration = const Duration(milliseconds: 500)}) async {
     var _loadingController = true == isShowLoading ? showLoading(_context, msg: _text) : null;
     try {
       _error = null;

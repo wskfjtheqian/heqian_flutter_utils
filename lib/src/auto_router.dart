@@ -8,6 +8,7 @@ typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Ma
 typedef CheckRouter = bool Function(String? path, Map<String, dynamic>? params);
 typedef PageBuilder = Page<dynamic> Function(BuildContext context, _KeyPage child, bool isDialog, String? path, Map<String, dynamic>? params);
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
+typedef HashRoute = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
 typedef RouterBuilder = RouterDataWidget Function(BuildContext context);
 typedef IsDialog = bool Function(BuildContext context, BaseRouterDelegate delegate);
@@ -395,12 +396,16 @@ class AppRouterDelegate extends BaseRouterDelegate
         }
         _historyList.removeWhere((element) {
           if (route.settings.name == element._routerData.path) {
-            element.result.complete(result);
+            if (!element.result.isCompleted) {
+              element.result.complete(result);
+            }
             element._data?.dispose();
             return true;
           }
           if (element._routerData.path.startsWith(route.settings.name ?? "")) {
-            element.result.complete(null);
+            if (!element.result.isCompleted) {
+              element.result.complete(null);
+            }
             element._data?.dispose();
             return true;
           }
@@ -494,7 +499,9 @@ class AppRouterDelegate extends BaseRouterDelegate
   Future<T?> pushNamedAndRemoveUntil<T>(String name, AutoRoutePredicate? predicate, Map<String, dynamic>? params) async {
     _historyList.removeWhere((element) {
       if (predicate?.call(element._routerData) ?? false) {
-        element.result.complete(null);
+        if (!element.result.isCompleted) {
+          element.result.complete(null);
+        }
         element._data?.dispose();
         return true;
       }
@@ -512,7 +519,9 @@ class AppRouterDelegate extends BaseRouterDelegate
   void popUntil(AutoRoutePredicate predicate) {
     _historyList.removeWhere((element) {
       if (predicate.call(element._routerData)) {
-        element.result.complete(null);
+        if (!element.result.isCompleted) {
+          element.result.complete(null);
+        }
         element._data?.dispose();
         return true;
       }
@@ -525,7 +534,9 @@ class AppRouterDelegate extends BaseRouterDelegate
     if (_historyList.isNotEmpty) {
       var last = _historyList.last;
       _historyList.removeLast();
-      last.result.complete(result);
+      if (!last.result.isCompleted) {
+        last.result.complete(result);
+      }
       last._data?.dispose();
     }
     notifyListeners();
@@ -558,6 +569,15 @@ class AppRouterDelegate extends BaseRouterDelegate
       }
     }
     return null!;
+  }
+
+  bool hashRouter(HashRoute hashRoute) {
+    for (var item in _historyList) {
+      if (hashRoute(item._routerData)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
@@ -696,12 +716,12 @@ class AutoRouter extends SubRouter {
           pageBuilder: pageBuilder,
         );
 
-  static _SubRouterState of(BuildContext context) {
+  static _AutoRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _SubRouterState) {
-      return context.state as _SubRouterState;
+      return context.state as _AutoRouterState;
     }
 
-    return context.findAncestorStateOfType<_SubRouterState>()!;
+    return context.findAncestorStateOfType<_AutoRouterState>()!;
   }
 
   @override
@@ -711,6 +731,18 @@ class AutoRouter extends SubRouter {
 class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
   _AutoRouterState(AppRouterDelegate delegate) : super(delegate);
   String _home = WidgetsBinding.instance!.window.defaultRouteName;
+
+  bool hashRouter(HashRoute hashRoute) {
+    return _delegate.hashRouter(hashRoute);
+  }
+
+  void addListener(VoidCallback listener) {
+    return _delegate.addListener(listener);
+  }
+
+  void removeListener(VoidCallback listener) {
+    return _delegate.removeListener(listener);
+  }
 
   @override
   void initState() {
@@ -759,20 +791,6 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
 
 bool isSubRouter(BuildContext context) {
   return context.findRootAncestorStateOfType<_SubRouterState>() != context.findAncestorStateOfType<_SubRouterState>();
-}
-
-bool checkRouter(BuildContext context, AutoRoutePredicate predicate) {
-  _AutoRouterState state = context.findRootAncestorStateOfType<_AutoRouterState>()!;
-  for (var item in state._delegate._historyList) {
-    // var call = state._delegate.getAutoPath(item._routerData.path);
-    // if (call.isDialog?.call(state._delegate) ?? false) {
-    //   return false;
-    // }
-    if (predicate(item._routerData)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 class AutoPage<T> extends Page<T> {
