@@ -155,6 +155,7 @@ class _HistoryRouter {
   AppRouterData _routerData;
   RouterWidgetBuilder _builder;
   Completer result = new Completer.sync();
+  final List<WillPopCallback> _willPopCallbacks = <WillPopCallback>[];
 
   _HistoryRouter(this._routerData, this._builder);
 
@@ -179,14 +180,57 @@ abstract class PageSize {
   Size get size;
 }
 
+class AutoRoutePopScope extends StatefulWidget {
+  final Widget child;
+
+  final WillPopCallback? onWillPop;
+
+  AutoRoutePopScope({Key? key, required this.child, this.onWillPop}) : super(key: key);
+
+  @override
+  _AutoRoutePopScopeState createState() => _AutoRoutePopScopeState();
+}
+
+class _AutoRoutePopScopeState extends State<AutoRoutePopScope> {
+  _KeyPage? _page;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.onWillPop != null) _page?.removeScopedWillPopCallback(widget.onWillPop!);
+    _page = context.findAncestorWidgetOfExactType<_KeyPage>();
+    if (widget.onWillPop != null) _page?.addScopedWillPopCallback(widget.onWillPop!);
+  }
+
+  @override
+  void didUpdateWidget(AutoRoutePopScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.onWillPop != oldWidget.onWillPop && _page != null) {
+      if (oldWidget.onWillPop != null) _page!.removeScopedWillPopCallback(oldWidget.onWillPop!);
+      if (widget.onWillPop != null) _page!.addScopedWillPopCallback(widget.onWillPop!);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.onWillPop != null) _page?.removeScopedWillPopCallback(widget.onWillPop!);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 class _KeyPage extends StatelessWidget {
   final Widget child;
+
+  final _HistoryRouter router;
 
   Size? _size;
 
   Size? get size => _size;
 
-  _KeyPage({required this.child, required AppRouterData routerData}) : super(key: ValueKey(routerData.path + routerData.params.toString())) {
+  _KeyPage({required this.child, required this.router}) : super(key: ValueKey(router._routerData.path + router._routerData.params.toString())) {
     if (child is PageSize) {
       _size = (child as PageSize).size;
     }
@@ -195,6 +239,14 @@ class _KeyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return child;
+  }
+
+  void addScopedWillPopCallback(WillPopCallback callback) {
+    router._willPopCallbacks.add(callback);
+  }
+
+  void removeScopedWillPopCallback(WillPopCallback callback) {
+    router._willPopCallbacks.remove(callback);
   }
 }
 
@@ -257,7 +309,10 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
       widget._data = router._data;
       pages.add(pageBuilder(
         context,
-        _KeyPage(child: widget, routerData: router._routerData),
+        _KeyPage(
+          child: widget,
+          router: router,
+        ),
         item.isDialog,
         router._routerData.path,
         router._routerData.params,
@@ -380,7 +435,7 @@ class AppRouterDelegate extends BaseRouterDelegate
       widget._data = router._data;
       pages.add(pageBuilder(
         context,
-        _KeyPage(child: widget, routerData: router._routerData),
+        _KeyPage(child: widget, router: router),
         item.isDialog,
         router._routerData.path,
         router._routerData.params,
@@ -479,8 +534,10 @@ class AppRouterDelegate extends BaseRouterDelegate
   Future<_HistoryRouter?> _addHistoryList(List<AppRouterData> configuration) async {
     if (configuration.isNotEmpty) {
       for (var item in configuration) {
-        this._historyList.add(_HistoryRouter(item, _routers[AutoPath(item.path)]!));
-
+        var router = _routers[AutoPath(item.path)];
+        if (null != router) {
+          this._historyList.add(_HistoryRouter(item, router));
+        }
         // var completer = Completer();
         // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         //   completer.complete();
@@ -585,6 +642,27 @@ class AppRouterDelegate extends BaseRouterDelegate
     }
     return false;
   }
+
+  Future<bool> didPopRoute() async {
+    if (_historyList.isNotEmpty) {
+      var last = _historyList.last;
+      for (final WillPopCallback callback in List<WillPopCallback>.from(last._willPopCallbacks)) {
+        if (await callback() != true) return true;
+      }
+
+      _historyList.removeLast();
+      if (!last.result.isCompleted) {
+        last.result.complete(null);
+      }
+      last._data?.dispose();
+    }
+    notifyListeners();
+
+    if (_historyList.isEmpty) {
+      return false;
+    }
+    return true;
+  }
 }
 
 class SubRouter extends StatefulWidget {
@@ -627,6 +705,7 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
     _delegate._checkRouter = widget.checkRouter ?? _checkRouter;
     _delegate._backgroundBuilder = widget.backgroundBuilder;
     _delegate.prefixPath = widget.prefixPath;
+
     super.initState();
   }
 
@@ -734,7 +813,7 @@ class AutoRouter extends SubRouter {
   _AutoRouterState createState() => _AutoRouterState(AppRouterDelegate._());
 }
 
-class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
+class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> with WidgetsBindingObserver {
   _AutoRouterState(AppRouterDelegate delegate) : super(delegate);
   String _home = WidgetsBinding.instance!.window.defaultRouteName;
 
@@ -751,6 +830,11 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
   }
 
   @override
+  Future<bool> didPopRoute() {
+    return _delegate.didPopRoute();
+  }
+
+  @override
   void initState() {
     if (null != widget.home) {
       _home = widget.home!;
@@ -759,6 +843,13 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> {
     _delegate._routers = widget.routers;
     _delegate._backgroundBuilder = widget.backgroundBuilder;
     super.initState();
+    WidgetsBinding.instance?.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance?.removeObserver(this);
+    super.dispose();
   }
 
   @override
