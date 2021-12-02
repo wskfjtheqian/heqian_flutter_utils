@@ -176,10 +176,15 @@ class _HistoryRouterBuilde {
   });
 }
 
-abstract class PageSize {
-  double? get width;
+class SizePage {
+  final double? width;
+  final double? height;
 
-  double? get height;
+  SizePage(this.width, this.height);
+}
+
+abstract class PageSize {
+  SizePage get size;
 }
 
 class AutoRoutePopScope extends StatefulWidget {
@@ -223,19 +228,18 @@ class _AutoRoutePopScopeState extends State<AutoRoutePopScope> {
   Widget build(BuildContext context) => widget.child;
 }
 
-class _KeyPage extends StatelessWidget implements PageSize {
+class _KeyPage extends StatelessWidget {
   final Widget child;
 
   final _HistoryRouter router;
 
-  double? _width;
+  SizePage? _size;
 
-  double? _height;
+  SizePage? get size => _size;
 
   _KeyPage({required this.child, required this.router}) : super(key: ValueKey(router._routerData.path + router._routerData.params.toString())) {
     if (child is PageSize) {
-      _height = (child as PageSize).height;
-      _width = (child as PageSize).width;
+      _size = (child as PageSize).size;
     }
   }
 
@@ -251,12 +255,6 @@ class _KeyPage extends StatelessWidget implements PageSize {
   void removeScopedWillPopCallback(WillPopCallback callback) {
     router._willPopCallbacks.remove(callback);
   }
-
-  @override
-  double? get height => _height;
-
-  @override
-  double? get width => _width;
 }
 
 class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with ChangeNotifier {
