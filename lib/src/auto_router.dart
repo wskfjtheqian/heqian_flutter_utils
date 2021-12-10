@@ -4,10 +4,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
 typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, dynamic>? params);
 typedef CheckRouter = bool Function(String? path, Map<String, dynamic>? params);
-typedef PageBuilder = Page<dynamic> Function(BuildContext context, _KeyPage child, bool isDialog, String? path, Map<String, dynamic>? params);
 typedef AutoRoutePredicate = bool Function(AppRouterData routerData);
 typedef HashRoute = bool Function(AppRouterData routerData);
 typedef OpenSubRouter = bool Function(BuildContext context);
@@ -117,8 +117,6 @@ abstract class RouterDataWidgetState<T extends RouterDataWidget> extends State<T
   Widget buildInit(BuildContext context) {
     return Container(
       color: Colors.white,
-      alignment: Alignment.center,
-      child: CupertinoActivityIndicator(),
     );
   }
 
@@ -155,28 +153,18 @@ class AppRouterData {
 class _HistoryRouter {
   RouterDataNotifier? _data;
   bool _isInit = false;
+  AutoPath _path;
   AppRouterData _routerData;
   RouterWidgetBuilder _builder;
   Completer result = new Completer.sync();
   final List<WillPopCallback> _willPopCallbacks = <WillPopCallback>[];
 
-  _HistoryRouter(this._routerData, this._builder);
+  _HistoryRouter(this._routerData, this._path, this._builder);
 
   @override
   String toString() {
     return '_HistoryRouter{_routerData: $_routerData}';
   }
-}
-
-class _HistoryRouterBuilde {
-  final bool isDialog;
-
-  final _HistoryRouter router;
-
-  _HistoryRouterBuilde({
-    required this.isDialog,
-    required this.router,
-  });
 }
 
 class SizePage {
@@ -190,76 +178,6 @@ abstract class PageSize {
   SizePage get size;
 }
 
-class AutoRoutePopScope extends StatefulWidget {
-  final Widget child;
-
-  final WillPopCallback? onWillPop;
-
-  AutoRoutePopScope({Key? key, required this.child, this.onWillPop}) : super(key: key);
-
-  @override
-  _AutoRoutePopScopeState createState() => _AutoRoutePopScopeState();
-}
-
-class _AutoRoutePopScopeState extends State<AutoRoutePopScope> {
-  _KeyPage? _page;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (widget.onWillPop != null) _page?.removeScopedWillPopCallback(widget.onWillPop!);
-    _page = context.findAncestorWidgetOfExactType<_KeyPage>();
-    if (widget.onWillPop != null) _page?.addScopedWillPopCallback(widget.onWillPop!);
-  }
-
-  @override
-  void didUpdateWidget(AutoRoutePopScope oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.onWillPop != oldWidget.onWillPop && _page != null) {
-      if (oldWidget.onWillPop != null) _page!.removeScopedWillPopCallback(oldWidget.onWillPop!);
-      if (widget.onWillPop != null) _page!.addScopedWillPopCallback(widget.onWillPop!);
-    }
-  }
-
-  @override
-  void dispose() {
-    if (widget.onWillPop != null) _page?.removeScopedWillPopCallback(widget.onWillPop!);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
-}
-
-class _KeyPage extends StatelessWidget {
-  final Widget child;
-
-  final _HistoryRouter router;
-
-  SizePage? _size;
-
-  SizePage? get size => _size;
-
-  _KeyPage({required this.child, required this.router}) : super(key: ValueKey(router._routerData.path + router._routerData.params.toString())) {
-    if (child is PageSize) {
-      _size = (child as PageSize).size;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return child;
-  }
-
-  void addScopedWillPopCallback(WillPopCallback callback) {
-    router._willPopCallbacks.add(callback);
-  }
-
-  void removeScopedWillPopCallback(WillPopCallback callback) {
-    router._willPopCallbacks.remove(callback);
-  }
-}
-
 class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with ChangeNotifier {
   List<BaseRouterDelegate> _usbDelegateList = [];
 
@@ -269,12 +187,44 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
 
   late BaseRouterDelegate _parent;
 
-  PageBuilder? _pageBuilder;
-
   String? prefixPath;
 
-  Page<dynamic> pageBuilder(BuildContext context, _KeyPage child, bool isDialog, String? path, Map<String, dynamic>? params) {
-    return (_pageBuilder ?? _parent.pageBuilder).call(context, child, isDialog, path, params);
+  Page<dynamic> pageBuilder(BuildContext context, RouterDataWidget dataWidget, _HistoryRouter router) {
+    Widget child = AutoRoutePopModel(child: dataWidget, router: router);
+    bool isDialog = router._path.isDialog?.call(context, this) ?? false;
+    if (isDialog) {
+      var size = SizePage(640, 768);
+      if (dataWidget is PageSize) {
+        size = (dataWidget as PageSize).size;
+      }
+      child = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(36),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              boxShadow: [
+                BoxShadow(color: Color(0x40888888), blurRadius: 8, spreadRadius: 4, offset: Offset(0, 3)),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              child: SizedBox(
+                child: child,
+                width: size.width,
+                height: size.height,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return AutoRoutePage(
+      key: ValueKey(isDialog.toString() + router._routerData.path + router._routerData.params.toString()),
+      child: child,
+      name: router._routerData.path,
+      arguments: router._routerData.params,
+    );
   }
 
   AutoPath getAutoPath(String path) {
@@ -304,28 +254,11 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
     var builders = getWidgetBuilders(context);
 
     var pages = <Page>[];
-    for (var item in builders) {
-      var router = item.router;
-      var widget = router._builder(context, router._routerData.params);
-      if (!router._isInit) {
-        router._data = widget.initData(context);
-        if (null != router._data) {
-          WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-            router._data?.initData(context);
-          });
-        }
-        router._isInit = true;
-      }
-      widget._data = router._data;
+    for (var router in builders) {
       pages.add(pageBuilder(
         context,
-        _KeyPage(
-          child: widget,
-          router: router,
-        ),
-        item.isDialog,
-        router._routerData.path,
-        router._routerData.params,
+        router._builder(context, router._routerData.params),
+        router,
       ));
     }
 
@@ -337,20 +270,17 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
     );
   }
 
-  List<_HistoryRouterBuilde> getWidgetBuilders(BuildContext context) {
-    var builders = <_HistoryRouterBuilde>[];
+  List<_HistoryRouter> getWidgetBuilders(BuildContext context) {
+    var builders = <_HistoryRouter>[];
     for (var item in historyList) {
       var ret = _isSubRouter(context, item._routerData);
       if (ret.sub || ret.dialog) {
         continue;
       }
-      builders.add(_HistoryRouterBuilde(isDialog: false, router: item));
+      builders.add(item);
     }
     if (builders.isEmpty) {
-      builders.add(_HistoryRouterBuilde(
-        isDialog: false,
-        router: _HistoryRouter(AppRouterData(path: "/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget()),
-      ));
+      builders.add(_HistoryRouter(AppRouterData(path: "/"), AutoPath("/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget()));
     }
 
     return builders;
@@ -430,25 +360,11 @@ class AppRouterDelegate extends BaseRouterDelegate
     var builders = getWidgetBuilders(context);
 
     var pages = <Page>[];
-    for (var item in builders) {
-      var router = item.router;
-      var widget = router._builder(context, router._routerData.params);
-      if (!router._isInit) {
-        router._data = widget.initData(navigatorKey.currentState?.overlay?.context);
-        if (null != router._data) {
-          WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-            router._data?.initData(context);
-          });
-        }
-        router._isInit = true;
-      }
-      widget._data = router._data;
+    for (var router in builders) {
       pages.add(pageBuilder(
         context,
-        _KeyPage(child: widget, router: router),
-        item.isDialog,
-        router._routerData.path,
-        router._routerData.params,
+        router._builder(context, router._routerData.params),
+        router,
       ));
     }
 
@@ -493,21 +409,18 @@ class AppRouterDelegate extends BaseRouterDelegate
   }
 
   @override
-  List<_HistoryRouterBuilde> getWidgetBuilders(BuildContext context) {
-    var builders = <_HistoryRouterBuilde>[];
+  List<_HistoryRouter> getWidgetBuilders(BuildContext context) {
+    var builders = <_HistoryRouter>[];
     for (var item in historyList) {
       var ret = _isSubRouter(context, item._routerData);
       if (ret.sub) {
         continue;
       }
 
-      builders.add(_HistoryRouterBuilde(isDialog: ret.dialog, router: item));
+      builders.add(item);
     }
     if (builders.isEmpty) {
-      builders.add(_HistoryRouterBuilde(
-        isDialog: false,
-        router: _HistoryRouter(AppRouterData(path: "/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget()),
-      ));
+      builders.add(_HistoryRouter(AppRouterData(path: "/"), AutoPath("/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget()));
     }
     return builders;
   }
@@ -541,18 +454,22 @@ class AppRouterDelegate extends BaseRouterDelegate
     }
   }
 
+  AutoPath? _findKey(String path) {
+    for (var item in _routers.entries) {
+      if (item.key.path == path) {
+        return item.key;
+      }
+    }
+    return null;
+  }
+
   Future<_HistoryRouter?> _addHistoryList(List<AppRouterData> configuration) async {
     if (configuration.isNotEmpty) {
       for (var item in configuration) {
-        var router = _routers[AutoPath(item.path)];
-        if (null != router) {
-          this._historyList.add(_HistoryRouter(item, router));
+        var key = _findKey(item.path);
+        if (null != key) {
+          this._historyList.add(_HistoryRouter(item, key, _routers[key]!));
         }
-        // var completer = Completer();
-        // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        //   completer.complete();
-        // });
-        // await completer.future.timeout(Duration(seconds: 2), onTimeout: () => null);
       }
       notifyListeners();
       return this._historyList.last;
@@ -679,14 +596,12 @@ class SubRouter extends StatefulWidget {
   final CheckRouter? checkRouter;
   final String? prefixPath;
   final RouterBuilder? backgroundBuilder;
-  final PageBuilder? pageBuilder;
 
   const SubRouter({
     Key? key,
     this.checkRouter,
     this.prefixPath,
     this.backgroundBuilder,
-    this.pageBuilder,
   })  : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
         super(key: key);
 
@@ -706,7 +621,6 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
 
   @override
   void initState() {
-    _delegate._pageBuilder = widget.pageBuilder;
     _routerState = context.findAncestorStateOfType<_SubRouterState>();
     if (null != _routerState) {
       _delegate._parent = _routerState!._delegate;
@@ -790,6 +704,11 @@ class AutoPath {
 
   @override
   int get hashCode => path.hashCode;
+
+  @override
+  String toString() {
+    return path;
+  }
 }
 
 class AutoRouter extends SubRouter {
@@ -802,29 +721,27 @@ class AutoRouter extends SubRouter {
     required this.builder,
     required this.routers,
     this.home,
-    required PageBuilder pageBuilder,
     RouterBuilder? backgroundBuilder,
   }) : super(
           key: key,
           prefixPath: home,
           backgroundBuilder: backgroundBuilder,
-          pageBuilder: pageBuilder,
         );
 
-  static _AutoRouterState of(BuildContext context) {
+  static AutoRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _SubRouterState) {
-      return context.state as _AutoRouterState;
+      return context.state as AutoRouterState;
     }
 
-    return context.findAncestorStateOfType<_AutoRouterState>()!;
+    return context.findAncestorStateOfType<AutoRouterState>()!;
   }
 
   @override
-  _AutoRouterState createState() => _AutoRouterState(AppRouterDelegate._());
+  AutoRouterState createState() => AutoRouterState(AppRouterDelegate._());
 }
 
-class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> with WidgetsBindingObserver {
-  _AutoRouterState(AppRouterDelegate delegate) : super(delegate);
+class AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> with WidgetsBindingObserver {
+  AutoRouterState(AppRouterDelegate delegate) : super(delegate);
   String _home = WidgetsBinding.instance!.window.defaultRouteName;
 
   bool hashRouter(HashRoute hashRoute) {
@@ -865,7 +782,6 @@ class _AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> wi
   @override
   void didUpdateWidget(covariant AutoRouter oldWidget) {
     _delegate._routers = oldWidget.routers;
-    _delegate._pageBuilder = oldWidget.pageBuilder;
     _delegate._backgroundBuilder = oldWidget.backgroundBuilder;
     super.didUpdateWidget(oldWidget);
   }
@@ -900,62 +816,164 @@ bool isSubRouter(BuildContext context) {
   return context.findRootAncestorStateOfType<_SubRouterState>() != context.findAncestorStateOfType<_SubRouterState>();
 }
 
-class AutoPage<T> extends Page<T> {
-  /// Creates a material page.
-  const AutoPage({
+class AutoRoutePopModel extends StatefulWidget {
+  final RouterDataWidget child;
+
+  final _HistoryRouter router;
+
+  const AutoRoutePopModel({Key? key, required this.child, required this.router}) : super(key: key);
+
+  @override
+  _AutoRoutePopModelState createState() => _AutoRoutePopModelState();
+}
+
+class _AutoRoutePopModelState extends State<AutoRoutePopModel> {
+  @override
+  void initState() {
+    if (!widget.router._isInit) {
+      widget.router._data = widget.child.initData(context);
+      WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+        widget.router._data?.init(context);
+      });
+      widget.router._isInit = true;
+    }
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    widget.child._data = widget.router._data;
+    return widget.child;
+  }
+
+  void removeScopedWillPopCallback(WillPopCallback param) {
+    widget.router._willPopCallbacks.remove(param);
+  }
+
+  void addScopedWillPopCallback(WillPopCallback param) {
+    widget.router._willPopCallbacks.add(param);
+  }
+}
+
+class AutoRoutePopScope extends StatefulWidget {
+  final Widget child;
+
+  final WillPopCallback? onWillPop;
+
+  AutoRoutePopScope({Key? key, required this.child, this.onWillPop}) : super(key: key);
+
+  @override
+  _AutoRoutePopScopeState createState() => _AutoRoutePopScopeState();
+}
+
+class _AutoRoutePopScopeState extends State<AutoRoutePopScope> {
+  _AutoRoutePopModelState? _page;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.onWillPop != null) _page?.removeScopedWillPopCallback(widget.onWillPop!);
+    _page = context.findAncestorStateOfType<_AutoRoutePopModelState>();
+    if (widget.onWillPop != null) _page?.addScopedWillPopCallback(widget.onWillPop!);
+  }
+
+  @override
+  void didUpdateWidget(AutoRoutePopScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.onWillPop != oldWidget.onWillPop && _page != null) {
+      if (oldWidget.onWillPop != null) _page!.removeScopedWillPopCallback(oldWidget.onWillPop!);
+      if (widget.onWillPop != null) _page!.addScopedWillPopCallback(widget.onWillPop!);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.onWillPop != null) _page?.removeScopedWillPopCallback(widget.onWillPop!);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+class AutoRoutePage<T> extends Page<T> {
+  const AutoRoutePage({
     required this.child,
-    this.maintainState = true,
-    this.fullscreenDialog = false,
+    this.dialog = false,
     LocalKey? key,
     String? name,
     Object? arguments,
     String? restorationId,
-  })  : assert(child != null),
-        assert(maintainState != null),
-        assert(fullscreenDialog != null),
-        super(key: key, name: name, arguments: arguments, restorationId: restorationId);
+  }) : super(key: key, name: name, arguments: arguments, restorationId: restorationId);
 
   final Widget child;
 
-  final bool maintainState;
-
-  final bool fullscreenDialog;
+  final bool dialog;
 
   @override
   Route<T> createRoute(BuildContext context) {
-    if (fullscreenDialog) {
-      return DialogRoute(
-        context: context,
-        builder: (context) => child,
-        settings: this,
-        barrierColor: Colors.transparent,
-      );
-    }
-    return _PageBasedMaterialPageRoute<T>(page: this);
+    return RawDialogRoute(
+      settings: this,
+      pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+        return child;
+      },
+    );
   }
 }
 
-class _PageBasedMaterialPageRoute<T> extends PageRoute<T> with MaterialRouteTransitionMixin<T> {
-  _PageBasedMaterialPageRoute({
-    required AutoPage<T> page,
-  })  : assert(page != null),
-        super(settings: page) {
-    assert(opaque);
+class AutoRoutePageRoute<T> extends PopupRoute<T> {
+  AutoRoutePageRoute({
+    required RoutePageBuilder pageBuilder,
+    bool barrierDismissible = true,
+    Color? barrierColor = const Color(0x80000000),
+    String? barrierLabel,
+    Duration transitionDuration = const Duration(milliseconds: 200),
+    RouteSettings? settings,
+  })  : _pageBuilder = pageBuilder,
+        _barrierDismissible = barrierDismissible,
+        _barrierLabel = barrierLabel,
+        _barrierColor = barrierColor,
+        _transitionDuration = transitionDuration,
+        super(settings: settings);
+
+  final RoutePageBuilder _pageBuilder;
+
+  @override
+  bool get barrierDismissible => _barrierDismissible;
+  final bool _barrierDismissible;
+
+  @override
+  String? get barrierLabel => _barrierLabel;
+  final String? _barrierLabel;
+
+  @override
+  Color? get barrierColor => _barrierColor;
+  final Color? _barrierColor;
+
+  @override
+  Duration get transitionDuration => _transitionDuration;
+  final Duration _transitionDuration;
+
+  @override
+  bool get opaque => true;
+
+  @override
+  Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+    return Semantics(
+      scopesRoute: true,
+      explicitChildNodes: true,
+      child: _pageBuilder(context, animation, secondaryAnimation),
+    );
   }
 
-  AutoPage<T> get _page => settings as AutoPage<T>;
-
   @override
-  Widget buildContent(BuildContext context) {
-    return _page.child;
+  Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+    return FadeTransition(
+      opacity: CurvedAnimation(
+        parent: animation,
+        curve: Curves.linear,
+      ),
+      child: child,
+    );
   }
-
-  @override
-  bool get maintainState => _page.maintainState;
-
-  @override
-  bool get fullscreenDialog => _page.fullscreenDialog;
-
-  @override
-  String get debugLabel => '${super.debugLabel}(${_page.name})';
 }

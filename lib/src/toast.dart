@@ -219,7 +219,7 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
       child: Align(
-        alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.5)),
+        alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.2)),
         child: Opacity(
           opacity: _controller.value,
           child: Container(

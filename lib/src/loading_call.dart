@@ -37,6 +37,7 @@ class LoadingCall extends StatefulWidget {
       }
       if (null != state) {
         state._context = context;
+        state._root = root;
         return state;
       }
     }
@@ -143,6 +144,8 @@ abstract class _Call {
   String Function(double value)? _text;
   bool _isEmpty = false;
 
+  bool _root = false;
+
   dynamic _error;
 
   late BuildContext _context;
@@ -160,9 +163,7 @@ abstract class _Call {
   OnLoadingCallError? _onError;
 
   OnLoadingCallError? get onError {
-    return _onError ?? getContext()
-        .findAncestorWidgetOfExactType<LoadingCall>()
-        ?.onError;
+    return _onError ?? getContext().findAncestorWidgetOfExactType<LoadingCall>()?.onError;
   }
 
   showError(dynamic value, bool isShow) {
@@ -170,8 +171,8 @@ abstract class _Call {
   }
 
   Future<T> call<T>(LoadingStateCall<T> call,
-      {bool isShowError = true, bool isShowLoading = true, Duration? duration = const Duration(milliseconds: 500)}) async {
-    var _loadingController = true == isShowLoading ? showLoading(_context, msg: _text) : null;
+      {bool isShowError = true, bool isShowLoading = true, Duration? duration}) async {
+    var _loadingController = true == isShowLoading ? showLoading(_context, msg: _text, root: _root) : null;
     try {
       _error = null;
       if (null == duration) {

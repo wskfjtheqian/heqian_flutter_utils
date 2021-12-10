@@ -39,7 +39,10 @@ class _LoadingBodyState extends State<Loading> {
     }
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: child,
+      child: Padding(
+        padding: const EdgeInsets.all(50),
+        child: ColoredBox(color: Colors.deepOrange, child: child),
+      ),
     );
   }
 }
@@ -178,14 +181,17 @@ LoadingController showLoading(
   Radius? radius,
   LoadingController? controller,
   Widget Function(BuildContext context)? indicatorBuilder,
+  bool root = true,
 }) {
   controller ??= LoadingController();
   var theme = LoadingTheme.of(context);
   OverlayState? overlayState;
   if (context is StatefulElement && context.state is OverlayState) {
     overlayState = context.state as OverlayState;
-  } else {
+  } else if (root) {
     overlayState = context.findRootAncestorStateOfType<OverlayState>();
+  } else {
+    overlayState = context.findAncestorStateOfType<OverlayState>();
   }
 
   controller._onAdd = () {
@@ -281,7 +287,7 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
     }
 
     Widget child = Align(
-      alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.5)),
+      alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.1)),
       child: Opacity(
         opacity: _controller.value,
         child: Container(
