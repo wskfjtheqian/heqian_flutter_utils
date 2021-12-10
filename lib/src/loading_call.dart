@@ -176,7 +176,7 @@ abstract class _Call {
     try {
       _error = null;
       if (null == duration) {
-        return call(this, _loadingController);
+        return await call(this, _loadingController);
       }
       return await Future.wait([call(this, _loadingController), Future.delayed(duration)]).then((value) => value[0]);
     } catch (e) {
