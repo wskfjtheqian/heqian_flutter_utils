@@ -216,19 +216,22 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
       textStyle = (widget.textStyle ?? theme?.textStyle)!.merge(textStyle);
     }
 
-    return Align(
-      alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.5)),
-      child: Opacity(
-        opacity: _controller.value,
-        child: Container(
-          decoration: BoxDecoration(
-            color: widget.color ?? (theme?.color ?? Color(0xCC808080)),
-            borderRadius: BorderRadius.all(widget.radius ?? (theme?.radius ?? Radius.circular(8))),
-          ),
-          padding: widget.padding ?? (theme?.padding ?? EdgeInsets.symmetric(vertical: 8, horizontal: 12)),
-          child: Text(
-            widget.msg,
-            style: textStyle,
+    return Padding(
+      padding: MediaQuery.of(context).viewInsets,
+      child: Align(
+        alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.5)),
+        child: Opacity(
+          opacity: _controller.value,
+          child: Container(
+            decoration: BoxDecoration(
+              color: widget.color ?? (theme?.color ?? Color(0xCC808080)),
+              borderRadius: BorderRadius.all(widget.radius ?? (theme?.radius ?? Radius.circular(8))),
+            ),
+            padding: widget.padding ?? (theme?.padding ?? EdgeInsets.symmetric(vertical: 8, horizontal: 12)),
+            child: Text(
+              widget.msg,
+              style: textStyle,
+            ),
           ),
         ),
       ),

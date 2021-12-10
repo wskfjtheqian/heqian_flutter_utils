@@ -30,7 +30,7 @@ class LoadingCall extends StatefulWidget {
   static _Call of(BuildContext context, {bool root = false, String Function(double value)? text}) {
     if (!root) {
       LoadingStatusState? state;
-      if (context is StatefulElement && (context).state is LoadingStatusState) {
+      if (context is StatefulElement && context.state is LoadingStatusState) {
         state = context.state as LoadingStatusState?;
       } else {
         state = context.findAncestorStateOfType<LoadingStatusState>();

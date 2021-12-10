@@ -44,8 +44,6 @@ class _LoadingBodyState extends State<Loading> {
   }
 }
 
-
-
 class LoadingThemeData {
   final Duration? duration;
   final TextStyle? textStyle;
@@ -283,7 +281,7 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
     }
 
     Widget child = Align(
-      alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.2)),
+      alignment: widget.alignment ?? (theme?.alignment ?? Alignment(0, 0.5)),
       child: Opacity(
         opacity: _controller.value,
         child: Container(
@@ -314,6 +312,10 @@ class __LoadingState extends State<_LoadingBody> with SingleTickerProviderStateM
           ),
         ),
       ),
+    );
+    child = Padding(
+      padding: MediaQuery.of(context).viewInsets,
+      child: child,
     );
 
     var colorMask = widget.colorMask ?? theme?.colorMask;

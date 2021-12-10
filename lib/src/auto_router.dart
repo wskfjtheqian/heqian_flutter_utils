@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -116,6 +117,8 @@ abstract class RouterDataWidgetState<T extends RouterDataWidget> extends State<T
   Widget buildInit(BuildContext context) {
     return Container(
       color: Colors.white,
+      alignment: Alignment.center,
+      child: CupertinoActivityIndicator(),
     );
   }
 
