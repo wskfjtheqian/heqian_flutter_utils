@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
 typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, dynamic>? params);
 typedef CheckRouter = bool Function(String? path, Map<String, dynamic>? params);
@@ -15,7 +14,7 @@ typedef RouterBuilder = RouterDataWidget Function(BuildContext context);
 typedef IsDialog = bool Function(BuildContext context, BaseRouterDelegate delegate);
 
 abstract class RouterDataNotifier extends ValueNotifier<bool> {
-  bool _dispose = false;
+  bool _isDispose = false;
 
   RouterDataNotifier() : super(false);
 
@@ -29,38 +28,40 @@ abstract class RouterDataNotifier extends ValueNotifier<bool> {
     }
   }
 
+  bool get isDispose => _isDispose;
+
   @override
   void dispose() {
-    if (!_dispose) {
+    if (!_isDispose) {
       super.dispose();
-      _dispose = true;
+      _isDispose = true;
     }
   }
 
   @override
   void addListener(VoidCallback listener) {
-    if (!_dispose) {
+    if (!_isDispose) {
       super.addListener(listener);
     }
   }
 
   @override
   void removeListener(VoidCallback listener) {
-    if (!_dispose) {
+    if (!_isDispose) {
       super.removeListener(listener);
     }
   }
 
   @override
   set value(bool newValue) {
-    if (!_dispose) {
+    if (!_isDispose) {
       super.value = newValue;
     }
   }
 
   @override
   void notifyListeners() {
-    if (!_dispose) {
+    if (!_isDispose) {
       super.notifyListeners();
     }
   }
@@ -265,10 +266,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
     return Navigator(
       pages: pages,
       onPopPage: (route, result) {
-        return Navigator
-            .of(context)
-            .widget
-            .onPopPage!(route, result);
+        return Navigator.of(context).widget.onPopPage!(route, result);
       },
     );
   }
@@ -605,8 +603,7 @@ class SubRouter extends StatefulWidget {
     this.checkRouter,
     this.prefixPath,
     this.backgroundBuilder,
-  })
-      : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
+  })  : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
         super(key: key);
 
   static _SubRouterState? of(BuildContext context) {
@@ -667,13 +664,15 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
     _delegate._removeSubRouterDelegate(delegate);
   }
 
-  Future<T?> pushNamed<T extends Object>(String name, {
+  Future<T?> pushNamed<T extends Object>(
+    String name, {
     Map<String, dynamic>? params,
   }) {
     return _routerState!.pushNamed(name, params: params);
   }
 
-  Future<T?> pushNamedAndRemoveUntil<T extends Object>(String path, {
+  Future<T?> pushNamedAndRemoveUntil<T extends Object>(
+    String path, {
     AutoRoutePredicate? predicate,
     Map<String, dynamic>? params,
   }) {
@@ -691,10 +690,7 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
   }
 
   Size? get size {
-    return context
-        .findRenderObject()
-        ?.paintBounds
-        .size;
+    return context.findRenderObject()?.paintBounds.size;
   }
 }
 
@@ -728,10 +724,10 @@ class AutoRouter extends SubRouter {
     this.home,
     RouterBuilder? backgroundBuilder,
   }) : super(
-    key: key,
-    prefixPath: home,
-    backgroundBuilder: backgroundBuilder,
-  );
+          key: key,
+          prefixPath: home,
+          backgroundBuilder: backgroundBuilder,
+        );
 
   static AutoRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _SubRouterState) {
@@ -919,6 +915,7 @@ class AutoRoutePage<T> extends Page<T> {
   Route<T> createRoute(BuildContext context) {
     return RawDialogRoute(
       settings: this,
+      barrierDismissible: false,
       pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
         return child;
       },
@@ -934,8 +931,7 @@ class AutoRoutePageRoute<T> extends PopupRoute<T> {
     String? barrierLabel,
     Duration transitionDuration = const Duration(milliseconds: 200),
     RouteSettings? settings,
-  })
-      : _pageBuilder = pageBuilder,
+  })  : _pageBuilder = pageBuilder,
         _barrierDismissible = barrierDismissible,
         _barrierLabel = barrierLabel,
         _barrierColor = barrierColor,
