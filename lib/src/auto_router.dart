@@ -1,9 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+
+final Animatable<Offset> _kRightMiddleTween = Tween<Offset>(
+  begin: const Offset(1.0, 0.0),
+  end: Offset.zero,
+);
 
 typedef RouterWidgetBuilder = RouterDataWidget Function(BuildContext context, Map<String, dynamic>? params);
 typedef CheckRouter = bool Function(String? path, Map<String, dynamic>? params);
@@ -225,6 +229,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
       child: child,
       name: router._routerData.path,
       arguments: router._routerData.params,
+      dialog: isDialog,
     );
   }
 
@@ -913,8 +918,9 @@ class AutoRoutePage<T> extends Page<T> {
 
   @override
   Route<T> createRoute(BuildContext context) {
-    return RawDialogRoute(
+    return AutoRoutePageRoute(
       settings: this,
+      dialog: this.dialog,
       barrierDismissible: false,
       pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
         return child;
@@ -924,9 +930,12 @@ class AutoRoutePage<T> extends Page<T> {
 }
 
 class AutoRoutePageRoute<T> extends PopupRoute<T> {
+  final bool dialog;
+
   AutoRoutePageRoute({
     required RoutePageBuilder pageBuilder,
     bool barrierDismissible = true,
+    this.dialog = true,
     Color? barrierColor = const Color(0x80000000),
     String? barrierLabel,
     Duration transitionDuration = const Duration(milliseconds: 200),
@@ -957,7 +966,7 @@ class AutoRoutePageRoute<T> extends PopupRoute<T> {
   final Duration _transitionDuration;
 
   @override
-  bool get opaque => true;
+  bool get opaque => !this.dialog;
 
   @override
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
@@ -970,11 +979,42 @@ class AutoRoutePageRoute<T> extends PopupRoute<T> {
 
   @override
   Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-    return FadeTransition(
-      opacity: CurvedAnimation(
-        parent: animation,
-        curve: Curves.linear,
-      ),
+    return AutoRoutePageTransition(
+      primaryRouteAnimation: animation,
+      secondaryRouteAnimation: secondaryAnimation,
+      linearTransition: true,
+      child: child,
+    );
+  }
+}
+
+class AutoRoutePageTransition extends StatelessWidget {
+  AutoRoutePageTransition({
+    Key? key,
+    required Animation<double> primaryRouteAnimation,
+    required Animation<double> secondaryRouteAnimation,
+    required this.child,
+    required bool linearTransition,
+  })  : _primaryPositionAnimation = (linearTransition
+                ? primaryRouteAnimation
+                : CurvedAnimation(
+                    parent: primaryRouteAnimation,
+                    curve: Curves.linearToEaseOut,
+                    reverseCurve: Curves.easeInToLinear,
+                  ))
+            .drive(_kRightMiddleTween),
+        super(key: key);
+
+  final Animation<Offset> _primaryPositionAnimation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    assert(debugCheckHasDirectionality(context));
+    final TextDirection textDirection = Directionality.of(context);
+    return SlideTransition(
+      position: _primaryPositionAnimation,
+      textDirection: textDirection,
       child: child,
     );
   }
