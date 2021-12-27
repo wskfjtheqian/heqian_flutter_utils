@@ -276,10 +276,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
     return Navigator(
       pages: pages,
       onPopPage: (route, result) {
-        return Navigator
-            .of(context)
-            .widget
-            .onPopPage!(route, result);
+        return Navigator.of(context).widget.onPopPage!(route, result);
       },
     );
   }
@@ -616,8 +613,7 @@ class SubRouter extends StatefulWidget {
     this.checkRouter,
     this.prefixPath,
     this.backgroundBuilder,
-  })
-      : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
+  })  : assert(null != checkRouter || 0 != (prefixPath?.length ?? 0)),
         super(key: key);
 
   static _SubRouterState? of(BuildContext context) {
@@ -678,13 +674,15 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
     _delegate._removeSubRouterDelegate(delegate);
   }
 
-  Future<T?> pushNamed<T extends Object>(String name, {
+  Future<T?> pushNamed<T extends Object>(
+    String name, {
     Map<String, dynamic>? params,
   }) {
     return _routerState!.pushNamed(name, params: params);
   }
 
-  Future<T?> pushNamedAndRemoveUntil<T extends Object>(String path, {
+  Future<T?> pushNamedAndRemoveUntil<T extends Object>(
+    String path, {
     AutoRoutePredicate? predicate,
     Map<String, dynamic>? params,
   }) {
@@ -702,10 +700,7 @@ class _SubRouterState<E extends BaseRouterDelegate, T extends SubRouter> extends
   }
 
   Size? get size {
-    return context
-        .findRenderObject()
-        ?.paintBounds
-        .size;
+    return context.findRenderObject()?.paintBounds.size;
   }
 }
 
@@ -739,10 +734,10 @@ class AutoRouter extends SubRouter {
     this.home,
     RouterBuilder? backgroundBuilder,
   }) : super(
-    key: key,
-    prefixPath: home,
-    backgroundBuilder: backgroundBuilder,
-  );
+          key: key,
+          prefixPath: home,
+          backgroundBuilder: backgroundBuilder,
+        );
 
   static AutoRouterState of(BuildContext context) {
     if (context is StatefulElement && context.state is _SubRouterState) {
@@ -928,7 +923,7 @@ class AutoRoutePage<T> extends Page<T> {
 
   @override
   Route<T> createRoute(BuildContext context) {
-    return AutoRoutePageRoute(
+    return AutoRoutePageRoute<T>(
       settings: this,
       dialog: this.dialog,
       barrierDismissible: false,
@@ -950,8 +945,7 @@ class AutoRoutePageRoute<T> extends PopupRoute<T> {
     String? barrierLabel,
     Duration transitionDuration = const Duration(milliseconds: 300),
     RouteSettings? settings,
-  })
-      : _pageBuilder = pageBuilder,
+  })  : _pageBuilder = pageBuilder,
         _barrierDismissible = barrierDismissible,
         _barrierLabel = barrierLabel,
         _barrierColor = barrierColor,
@@ -990,6 +984,9 @@ class AutoRoutePageRoute<T> extends PopupRoute<T> {
 
   @override
   Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+    if (settings.name == "/") {
+      return child;
+    }
     final TextDirection textDirection = Directionality.of(context);
     return SlideTransition(
       position: animation.drive(this.dialog ? _kBottomMiddleTween : _kRightMiddleTween),
