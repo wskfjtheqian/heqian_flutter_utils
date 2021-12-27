@@ -946,9 +946,9 @@ class AutoRoutePageRoute<T> extends PopupRoute<T> {
     required RoutePageBuilder pageBuilder,
     bool barrierDismissible = true,
     this.dialog = true,
-    Color? barrierColor = const Color(0x80000000),
+    Color? barrierColor = const Color(0x20808080),
     String? barrierLabel,
-    Duration transitionDuration = const Duration(milliseconds: 200),
+    Duration transitionDuration = const Duration(milliseconds: 300),
     RouteSettings? settings,
   })
       : _pageBuilder = pageBuilder,
