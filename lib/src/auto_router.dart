@@ -855,6 +855,8 @@ class _AutoRoutePopModelState extends State<AutoRoutePopModel> {
         widget.router._data?.init(context);
       });
       widget.router._isInit = true;
+    } else {
+      widget.child.data = widget.router._data;
     }
     super.initState();
   }
