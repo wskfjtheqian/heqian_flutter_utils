@@ -7,13 +7,23 @@ typedef IndicatorBuilder = Widget Function(BuildContext context, double value);
 class Loading extends StatefulWidget {
   final LoadingThemeData? data;
 
-  final Widget child;
+  Widget? _child;
 
-  const Loading({
+  WidgetBuilder? _builder;
+
+  Loading({
     Key? key,
     this.data,
-    required this.child,
-  }) : super(key: key);
+    required Widget child,
+  })  : _child = child,
+        super(key: key);
+
+  Loading.builder({
+    Key? key,
+    this.data,
+    required WidgetBuilder builder,
+  })  : _builder = builder,
+        super(key: key);
 
   @override
   _LoadingBodyState createState() => _LoadingBodyState();
@@ -25,24 +35,20 @@ class _LoadingBodyState extends State<Loading> {
     Widget child = Overlay(
       initialEntries: [
         OverlayEntry(
-          builder: (context) {
-            return widget.child;
-          },
+          builder: widget._builder ?? (context) => widget._child!,
         )
       ],
     );
+
     if (null != widget.data) {
       child = LoadingTheme(
-        child: widget.child,
+        child: child,
         data: widget.data!,
       );
     }
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: Padding(
-        padding: const EdgeInsets.all(50),
-        child: ColoredBox(color: Colors.deepOrange, child: child),
-      ),
+      child: child,
     );
   }
 }

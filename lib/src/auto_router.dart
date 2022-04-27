@@ -1054,7 +1054,7 @@ class AutoRoutePageRoute<T> extends PopupRoute<T> {
         child: child,
       );
     }
-    print(navigator!.userGestureInProgress);
+
     final TextDirection textDirection = Directionality.of(context);
     return SlideTransition(
       position: position,
