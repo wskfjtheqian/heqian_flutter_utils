@@ -188,6 +188,7 @@ LoadingController showLoading(
   LoadingController? controller,
   Widget Function(BuildContext context)? indicatorBuilder,
   bool root = true,
+  Color colorMask = const Color(0x30000000),
 }) {
   controller ??= LoadingController();
   var theme = LoadingTheme.of(context);
@@ -213,6 +214,7 @@ LoadingController showLoading(
           radius: radius,
           loadingController: controller!,
           indicatorBuilder: indicatorBuilder,
+          colorMask: colorMask,
         ),
       );
     });
