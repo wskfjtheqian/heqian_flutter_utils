@@ -113,7 +113,8 @@ class LoadingThemeData {
           color == other.color &&
           colorMask == other.colorMask &&
           radius == other.radius &&
-          indicatorBuilder == other.indicatorBuilder;
+          indicatorBuilder == other.indicatorBuilder &&
+          boxShadow == other.boxShadow;
 
   @override
   int get hashCode =>
@@ -124,7 +125,8 @@ class LoadingThemeData {
       color.hashCode ^
       colorMask.hashCode ^
       radius.hashCode ^
-      indicatorBuilder.hashCode;
+      indicatorBuilder.hashCode ^
+      boxShadow.hashCode;
 }
 
 class LoadingTheme extends InheritedTheme {
