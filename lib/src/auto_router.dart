@@ -324,14 +324,14 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
   }
 
   void _addSubRouterDelegate(BaseRouterDelegate delegate) {
-    WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       _usbDelegateList.add(delegate);
       notifyListeners();
     });
   }
 
   void _removeSubRouterDelegate(BaseRouterDelegate delegate) {
-    WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       _usbDelegateList.remove(delegate);
       notifyListeners();
     });
@@ -761,7 +761,7 @@ class AutoRouter extends SubRouter {
 
 class AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> with WidgetsBindingObserver {
   AutoRouterState(AppRouterDelegate delegate) : super(delegate);
-  String _home = WidgetsBinding.instance!.window.defaultRouteName;
+  String _home = WidgetsBinding.instance.window.defaultRouteName;
 
   bool hashRouter(HashRoute hashRoute) {
     return _delegate.hashRouter(hashRoute);

@@ -58,7 +58,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
     _isInit = widget.initBuilder == null;
     _onError = widget.onError;
     if (null != widget.onInitLoading) {
-      WidgetsBinding.instance!.addPostFrameCallback((timeStamp) async {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
         try {
           _isEmpty = false == await widget.onInitLoading!(context);
         } catch (e) {

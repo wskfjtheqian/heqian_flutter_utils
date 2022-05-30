@@ -178,7 +178,7 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
     _controller.forward();
     super.initState();
     widget.toastController?._onRemove = _onRemove;
-    WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       _timer = Timer(widget.duration ?? (ToastTheme.of(context)?.duration ?? Duration(seconds: 2)), () {
         _controller.reverse();
         _timer = null;
