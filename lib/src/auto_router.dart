@@ -789,12 +789,12 @@ class AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> wit
     _delegate._routers = widget.routers;
     _delegate._backgroundBuilder = widget.backgroundBuilder;
     super.initState();
-    WidgetsBinding.instance?.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance?.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -851,7 +851,7 @@ class _AutoRoutePopModelState extends State<AutoRoutePopModel> {
   void initState() {
     if (!widget.router._isInit) {
       widget.router._data = widget.child.initData(context);
-      WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         widget.router._data?.init(context);
       });
       widget.router._isInit = true;
