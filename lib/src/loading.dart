@@ -210,20 +210,25 @@ LoadingController showLoading(
 
   controller._onAdd = () {
     controller!._overlay = OverlayEntry(builder: (context) {
-      return LoadingTheme(
-        data: theme,
-        child: _LoadingBody(
-          msg: msg,
-          textStyle: textStyle,
-          alignment: alignment,
-          padding: padding,
-          color: color,
-          radius: radius,
-          loadingController: controller!,
-          indicatorBuilder: indicatorBuilder,
-          colorMask: colorMask,
-        ),
+      Widget child = _LoadingBody(
+        msg: msg,
+        textStyle: textStyle,
+        alignment: alignment,
+        padding: padding,
+        color: color,
+        radius: radius,
+        loadingController: controller!,
+        indicatorBuilder: indicatorBuilder,
+        colorMask: colorMask,
       );
+
+      if (null != theme) {
+        child = LoadingTheme(
+          data: theme,
+          child: child,
+        );
+      }
+      return child;
     });
     controller._isShow = true;
     overlayState!.insert(controller._overlay!);

@@ -92,6 +92,9 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
     } else {
       child = widget.builder(context);
     }
+    if (null != widget.data) {
+      return child;
+    }
     return LoadingTheme(
       data: widget.data,
       child: child,
@@ -170,8 +173,7 @@ abstract class _Call {
     showToast(_context, "$value");
   }
 
-  Future<T> call<T>(LoadingStateCall<T> call,
-      {bool isShowError = true, bool isShowLoading = true, Duration? duration}) async {
+  Future<T> call<T>(LoadingStateCall<T> call, {bool isShowError = true, bool isShowLoading = true, Duration? duration}) async {
     var _loadingController = true == isShowLoading ? showLoading(_context, msg: _text, root: _root) : null;
     try {
       _error = null;
