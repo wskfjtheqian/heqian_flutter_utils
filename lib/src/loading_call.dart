@@ -92,7 +92,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
     } else {
       child = widget.builder(context);
     }
-    if (null != widget.data) {
+    if (null == widget.data) {
       return child;
     }
     return LoadingTheme(
