@@ -40,6 +40,7 @@ class _LoadingBodyState extends State<Loading> {
       ],
     );
 
+
     if (null != widget.data) {
       child = LoadingTheme(
         child: child,
