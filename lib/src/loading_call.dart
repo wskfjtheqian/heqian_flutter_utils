@@ -166,7 +166,20 @@ abstract class _Call {
   OnLoadingCallError? _onError;
 
   OnLoadingCallError? get onError {
-    return _onError ?? getContext().findAncestorWidgetOfExactType<LoadingCall>()?.onError;
+    if (null != _onError) {
+      return _onError;
+    }
+
+    var loading = getContext().findAncestorStateOfType<LoadingStatusState>();
+    if (null == loading) {
+      return null;
+    }
+
+    if (null != loading.widget.onError) {
+      return loading.widget.onError;
+    }
+
+    return loading.onError;
   }
 
   showError(dynamic value, bool isShow) {
