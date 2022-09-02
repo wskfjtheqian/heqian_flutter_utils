@@ -34,15 +34,12 @@ class MyApp extends StatelessWidget {
         return AutoRouter(
           home: "/",
           routers: {
-            "/": (context, param) => MyHomePage(),
-            "/toastPage": (context, param) => ToastPage(),
-            "/routerPage": (context, param) => PageMultilevelRouter(),
-            "/routerPage/subRouter1": (context, param) => SubRouterPage1(),
-            "/routerPage/subRouter2": (context, param) => SubRouterPage2(),
-            "/routerPage/subRouter1/subRouter3": (context, param) => SubRouterPage3(),
-          },
-          pageBuilder: (context, child, path, params) {
-            return MaterialPage(child: child, name: path, arguments: params);
+            AutoPath("/"): (context, param) => MyHomePage(),
+            AutoPath("/toastPage"): (context, param) => ToastPage(),
+            AutoPath("/routerPage"): (context, param) => PageMultilevelRouter(),
+            AutoPath("/routerPage/subRouter1"): (context, param) => SubRouterPage1(),
+            AutoPath("/routerPage/subRouter2"): (context, param) => SubRouterPage2(),
+            AutoPath("/routerPage/subRouter1/subRouter3"): (context, param) => SubRouterPage3(),
           },
           builder: (context, appRouter) {
             return MaterialApp.router(
@@ -68,11 +65,9 @@ class MyHomePage extends RouterDataWidget {
   _MyHomePageState createState() => _MyHomePageState();
 
   @override
-  initData(BuildContext? context) {
-    throw UnimplementedError();
+  initData(BuildContext context) {
+
   }
-
-
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -133,9 +128,8 @@ class ToastPage extends RouterDataWidget {
   @override
   _ToastPageState createState() => _ToastPageState();
 
-
   @override
-  initData(BuildContext? context) {
+  initData(BuildContext context) {
     throw UnimplementedError();
   }
 }
