@@ -89,7 +89,7 @@ abstract class RouterDataWidget<T extends RouterDataNotifier> extends StatefulWi
 
   RouterDataWidget({Key? key}) : super(key: key);
 
-  T? initData(BuildContext? context);
+  T? initData(BuildContext context);
 
   T? get data => _data;
 
