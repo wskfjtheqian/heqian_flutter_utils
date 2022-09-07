@@ -615,6 +615,11 @@ class AppRouterDelegate extends BaseRouterDelegate
     }
     return true;
   }
+
+  @override
+  Future<List<AppRouterData>> parseRouteInformationWithDependencies(RouteInformation routeInformation, BuildContext context) {
+    return parseRouteInformation(routeInformation);
+  }
 }
 
 class SubRouter extends StatefulWidget {
