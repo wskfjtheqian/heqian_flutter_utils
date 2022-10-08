@@ -7,11 +7,8 @@ class PageMultilevelRouter extends RouterDataWidget {
   @override
   _PageMultilevelRouterState createState() => _PageMultilevelRouterState();
 
-
   @override
-  initData(BuildContext? context) {
-    throw UnimplementedError();
-  }
+  initData(BuildContext context) {}
 }
 
 class _PageMultilevelRouterState extends State<PageMultilevelRouter> {
@@ -70,11 +67,8 @@ class SubRouterPage1 extends RouterDataWidget {
   @override
   _SubRouterPage1State createState() => _SubRouterPage1State();
 
-
   @override
-  initData(BuildContext? context) {
-    throw UnimplementedError();
-  }
+  initData(BuildContext context) {}
 }
 
 class _SubRouterPage1State extends State<SubRouterPage1> {
@@ -84,8 +78,8 @@ class _SubRouterPage1State extends State<SubRouterPage1> {
       appBar: isSubRouter(context)
           ? null
           : AppBar(
-        title: Text("这是二级路由"),
-      ),
+              title: Text("这是二级路由"),
+            ),
       body: Container(
         color: Colors.blue,
         width: double.infinity,
@@ -110,18 +104,22 @@ class _SubRouterPage1State extends State<SubRouterPage1> {
   }
 }
 
-class SubRouterPage2Data extends ChangeNotifier {
+class SubRouterPage2Data extends RouterDataNotifier {
   String name = "Init Text";
+
+  @override
+  Future<void> init(BuildContext context) {
+    value = true;
+  }
 }
 
 class SubRouterPage2 extends RouterDataWidget<SubRouterPage2Data> {
   @override
   _SubRouterPage2State createState() => _SubRouterPage2State();
 
-
   @override
-  initData(BuildContext context) {
-    throw UnimplementedError();
+  SubRouterPage2Data initData(BuildContext context) {
+    return SubRouterPage2Data();
   }
 }
 
@@ -160,9 +158,7 @@ class SubRouterPage3 extends RouterDataWidget {
   _SubRouterPage3State createState() => _SubRouterPage3State();
 
   @override
-  initData(BuildContext? context) {
-    throw UnimplementedError();
-  }
+  initData(BuildContext context) {}
 }
 
 class _SubRouterPage3State extends State<SubRouterPage3> {

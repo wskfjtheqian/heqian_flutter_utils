@@ -89,7 +89,7 @@ abstract class RouterDataWidget<T extends RouterDataNotifier> extends StatefulWi
 
   RouterDataWidget({Key? key}) : super(key: key);
 
-  T? initData(BuildContext? context);
+  T? initData(BuildContext context);
 
   T? get data => _data;
 
@@ -207,6 +207,12 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
 
   String? prefixPath;
 
+  _HistoryRouter? _emptyRouter;
+
+  BaseRouterDelegate() {
+    _emptyRouter = _HistoryRouter(AppRouterData(path: "/"), AutoPath("/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget());
+  }
+
   Page<dynamic> pageBuilder(BuildContext context, RouterDataWidget dataWidget, _HistoryRouter router) {
     Widget child = AutoRoutePopModel(child: dataWidget, router: router);
     bool isDialog = router._path.isDialog?.call(context, this) ?? false;
@@ -299,7 +305,7 @@ class BaseRouterDelegate extends RouterDelegate<List<AppRouterData>> with Change
       builders.add(item);
     }
     if (builders.isEmpty) {
-      builders.add(_HistoryRouter(AppRouterData(path: "/"), AutoPath("/"), (context, params) => _backgroundBuilder?.call(context) ?? _DefaultWidget()));
+      builders.add(_emptyRouter!);
     }
 
     return builders;
@@ -609,6 +615,11 @@ class AppRouterDelegate extends BaseRouterDelegate
     }
     return true;
   }
+
+  @override
+  Future<List<AppRouterData>> parseRouteInformationWithDependencies(RouteInformation routeInformation, BuildContext context) {
+    return parseRouteInformation(routeInformation);
+  }
 }
 
 class SubRouter extends StatefulWidget {
@@ -761,6 +772,7 @@ class AutoRouter extends SubRouter {
 
 class AutoRouterState extends _SubRouterState<AppRouterDelegate, AutoRouter> with WidgetsBindingObserver {
   AutoRouterState(AppRouterDelegate delegate) : super(delegate);
+
   String _home = WidgetsBinding.instance.window.defaultRouteName;
 
   bool hashRouter(HashRoute hashRoute) {
