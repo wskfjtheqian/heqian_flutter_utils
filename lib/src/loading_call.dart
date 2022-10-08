@@ -85,7 +85,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   @override
   bool get isEmpty {
     if (null == widget.onInitLoading) {
-      return widget.isEmpty ?? true;
+      return widget.isEmpty ?? false;
     } else {
       return super.isEmpty;
     }
