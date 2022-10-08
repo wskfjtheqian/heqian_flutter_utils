@@ -12,6 +12,7 @@ class LoadingCall extends StatefulWidget {
   final Widget Function(BuildContext context, dynamic error)? errorBuilder;
   final OnLoadingCallError? onError;
   final LoadingThemeData? data;
+  final bool? isEmpty;
 
   const LoadingCall({
     Key? key,
@@ -22,6 +23,7 @@ class LoadingCall extends StatefulWidget {
     this.errorBuilder,
     this.initBuilder,
     this.data,
+    this.isEmpty,
   }) : super(key: key);
 
   @override
@@ -78,6 +80,15 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   void didUpdateWidget(covariant LoadingCall oldWidget) {
     _onError = oldWidget.onError;
     super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  bool get isEmpty {
+    if (null == widget.onInitLoading) {
+      return widget.isEmpty ?? true;
+    } else {
+      return super.isEmpty;
+    }
   }
 
   @override
