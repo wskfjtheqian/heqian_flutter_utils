@@ -115,7 +115,10 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   Widget _buildEmpty(BuildContext context) {
     return Material(
       child: Center(
-        child: Text("暂无数据"),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Text("暂无数据"),
+        ),
       ),
     );
   }
@@ -123,7 +126,10 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   Widget _buildError(BuildContext context, dynamic error) {
     return Material(
       child: Center(
-        child: Text("错误 :$error"),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Text("错误 :$error"),
+        ),
       ),
     );
   }
