@@ -62,6 +62,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
     super.initState();
     _isInit = widget.initBuilder == null;
     _onError = widget.onError;
+    _onShowError = widget.onShowError;
     if (null != widget.onInitLoading) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
         try {
@@ -82,6 +83,7 @@ class LoadingStatusState extends State<LoadingCall> with _Call {
   @override
   void didUpdateWidget(covariant LoadingCall oldWidget) {
     _onError = oldWidget.onError;
+    _onShowError = oldWidget.onShowError;
     super.didUpdateWidget(oldWidget);
   }
 
