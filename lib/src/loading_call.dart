@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:heqian_flutter_utils/heqian_flutter_utils.dart';
 
 typedef OnLoadingCallError = Future<dynamic> Function(BuildContext context, dynamic error);
+typedef OnShowError = void Function(dynamic message);
 
 class LoadingCall extends StatefulWidget {
   final WidgetBuilder builder;
@@ -13,6 +14,7 @@ class LoadingCall extends StatefulWidget {
   final OnLoadingCallError? onError;
   final LoadingThemeData? data;
   final bool? isEmpty;
+  final OnShowError? onShowError;
 
   const LoadingCall({
     Key? key,
@@ -24,6 +26,7 @@ class LoadingCall extends StatefulWidget {
     this.initBuilder,
     this.data,
     this.isEmpty,
+    this.onShowError,
   }) : super(key: key);
 
   @override
@@ -178,6 +181,8 @@ abstract class _Call {
 
   OnLoadingCallError? _onError;
 
+  OnShowError? _onShowError;
+
   OnLoadingCallError? get onError {
     if (null != _onError) {
       return _onError;
@@ -195,8 +200,29 @@ abstract class _Call {
     return loading.onError;
   }
 
+  OnShowError? get onShowError {
+    if (null != _onShowError) {
+      return _onShowError;
+    }
+
+    var loading = getContext().findAncestorStateOfType<LoadingStatusState>();
+    if (null == loading) {
+      return null;
+    }
+
+    if (null != loading.widget.onShowError) {
+      return loading.widget.onShowError;
+    }
+
+    return loading.onShowError;
+  }
+
   showError(dynamic value, bool isShow) {
-    showToast(_context, "$value");
+    if (null != onShowError) {
+      onShowError!.call(value);
+    } else {
+      showToast(_context, "$value");
+    }
   }
 
   Future<T> call<T>(LoadingStateCall<T> call, {bool isShowError = true, bool isShowLoading = true, Duration? duration}) async {
